@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
+import PostHogProvider from "@/components/PostHogProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,7 +31,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${instrumentSerif.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
       >
-        {children}
+        <PostHogProvider>
+          {children}
+        </PostHogProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
