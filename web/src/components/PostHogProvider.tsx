@@ -5,7 +5,7 @@ import { initAnalytics } from '@/lib/posthog';
 
 export default function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    initAnalytics();
+    void initAnalytics();
   }, []);
 
   return <>{children}</>;
