@@ -107,7 +107,7 @@ export default function ManageTournamentPage() {
 
       {/* Pavilion — host communications */}
       <section className="mt-6">
-        <Pavilion leagueId={id} mode="host" />
+        <Pavilion key={id} leagueId={id} mode="host" />
       </section>
 
       {/* Teams */}
