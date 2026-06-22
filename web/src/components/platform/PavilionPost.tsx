@@ -29,6 +29,7 @@ interface Props {
   mode: 'public' | 'host'
   acked: boolean
   viewerId: string
+  isNew?: boolean
   onChanged: () => void
 }
 
@@ -38,7 +39,7 @@ const FLAG_NEXT: Record<FlagStatus, FlagStatus | null> = {
   RESOLVED: null,
 }
 
-export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) {
+export function PavilionPost({ post, mode, acked, viewerId, isNew = false, onChanged }: Props) {
   const kindMeta = KIND_META[post.kind]
   const prio = PRIORITY_META[post.priority]
   const showPrio = post.priority === 'URGENT' || post.priority === 'HIGH'
@@ -125,7 +126,7 @@ export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) 
   }
 
   return (
-    <div className="cy-card cy-panel rounded-xl p-4">
+    <div className={`cy-card cy-panel rounded-xl p-4 ${isNew ? 'ring-1 ring-[#1f9d57]/40' : ''}`}>
       <div className="flex items-start gap-3">
         <span
           className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
@@ -135,6 +136,11 @@ export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) 
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
+            {isNew && (
+              <span className="rounded-full bg-[#1f9d57] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                New
+              </span>
+            )}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${kindMeta.chip}`}>
               {kindMeta.label}
             </span>

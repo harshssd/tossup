@@ -60,7 +60,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="mt-8">
-        <Pavilion leagueId={league.id} mode="public" />
+        {/* key on the tournament id so a soft-nav to another board remounts
+            the Pavilion fresh (resets per-board "seen" state). */}
+        <Pavilion key={league.id} leagueId={league.id} mode="public" />
       </div>
 
       <h2 className="cy-display mt-10 text-2xl font-semibold text-[#16150f]">Standings</h2>
