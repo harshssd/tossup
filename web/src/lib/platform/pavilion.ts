@@ -1,0 +1,185 @@
+import { platformDb } from './db'
+import type { Database } from '@/lib/database.types'
+
+// ---------------- Types ----------------
+export type Post = Database['public']['Tables']['tournament_posts']['Row']
+export type PostReply = Database['public']['Tables']['tournament_post_replies']['Row']
+export type PostKind = Database['public']['Enums']['post_kind']
+export type PostPriority = Database['public']['Enums']['post_priority']
+export type FlagStatus = Database['public']['Enums']['flag_status']
+
+export type Lane = 'announcements' | 'discussion' | 'flags'
+
+/** Kinds that live in the Announcements lane (host broadcasts). */
+export const ANNOUNCEMENT_KINDS: PostKind[] = ['ANNOUNCEMENT', 'SCHEDULE', 'RESULT', 'ALERT']
+
+// ---------------- Display metadata (Clubhouse light) ----------------
+export const KIND_META: Record<PostKind, { label: string; chip: string }> = {
+  ANNOUNCEMENT: { label: 'Announcement', chip: 'bg-[#e7f4ec] text-[#0f5a30]' },
+  SCHEDULE: { label: 'Schedule', chip: 'bg-[#fcf3d6] text-[#9a6b09]' },
+  RESULT: { label: 'Result', chip: 'bg-[#e4eefb] text-[#2257b3]' },
+  ALERT: { label: 'Alert', chip: 'bg-[#fdeee4] text-[#c0431a]' },
+  GENERAL: { label: 'Discussion', chip: 'bg-[#efede6] text-[#6f6c63]' },
+  FLAG: { label: 'Flag', chip: 'bg-[#fdeee4] text-[#c0431a]' },
+}
+
+export const PRIORITY_META: Record<PostPriority, { label: string; accent: string; rail: string }> = {
+  URGENT: { label: 'Urgent', accent: '#c0431a', rail: '#e07a44' },
+  HIGH: { label: 'High', accent: '#9a6b09', rail: '#e8b53f' },
+  NORMAL: { label: 'Normal', accent: '#6f6c63', rail: 'transparent' },
+  LOW: { label: 'Low', accent: '#9a978d', rail: 'transparent' },
+}
+
+export const FLAG_STATUS_META: Record<FlagStatus, { label: string; chip: string }> = {
+  OPEN: { label: 'Open', chip: 'bg-[#fdeee4] text-[#c0431a]' },
+  ACKNOWLEDGED: { label: 'Acknowledged', chip: 'bg-[#fcf3d6] text-[#9a6b09]' },
+  RESOLVED: { label: 'Resolved', chip: 'bg-[#e7f4ec] text-[#0f5a30]' },
+}
+
+export const ANNOUNCEMENT_COMPOSE_KINDS: { value: PostKind; label: string }[] = [
+  { value: 'ANNOUNCEMENT', label: 'Announcement' },
+  { value: 'SCHEDULE', label: 'Schedule change' },
+  { value: 'RESULT', label: 'Result update' },
+  { value: 'ALERT', label: 'Alert' },
+]
+
+export const PRIORITY_OPTIONS: { value: PostPriority; label: string }[] = [
+  { value: 'NORMAL', label: 'Normal' },
+  { value: 'HIGH', label: 'High' },
+  { value: 'URGENT', label: 'Urgent' },
+  { value: 'LOW', label: 'Low' },
+]
+
+// ---------------- Relevance ranking ----------------
+// "Most relevant latest at top": pinned items float above everything, then the
+// rest sort by a score blending priority and recency (≈2-day decay). A fresh
+// URGENT outranks a stale HIGH; a stale LOW sinks. Predictable, not a black box.
+const PRIORITY_WEIGHT: Record<PostPriority, number> = { URGENT: 1000, HIGH: 300, NORMAL: 100, LOW: 30 }
+
+export function relevanceScore(p: Post, now: number): number {
+  const ageHours = (now - new Date(p.created_at).getTime()) / 3_600_000
+  const recency = 200 * Math.exp(-Math.max(ageHours, 0) / 48)
+  return PRIORITY_WEIGHT[p.priority] + recency
+}
+
+export function isExpired(p: Post, now: number): boolean {
+  return p.expires_at ? new Date(p.expires_at).getTime() < now : false
+}
+
+/** Split announcement posts into a host-curated pinned strip and a ranked feed. */
+export function rankAnnouncements(posts: Post[], now: number = Date.now()): { pinned: Post[]; feed: Post[] } {
+  const ann = posts.filter((p) => ANNOUNCEMENT_KINDS.includes(p.kind))
+  const pinned = ann
+    .filter((p) => p.is_pinned)
+    .sort((a, b) => new Date(b.pinned_at ?? b.created_at).getTime() - new Date(a.pinned_at ?? a.created_at).getTime())
+  const feed = ann
+    .filter((p) => !p.is_pinned && !isExpired(p, now))
+    .sort((a, b) => relevanceScore(b, now) - relevanceScore(a, now))
+  return { pinned, feed }
+}
+
+/** Flags newest-first, but OPEN ahead of resolved so nothing slips. */
+export function rankFlags(posts: Post[]): Post[] {
+  const order: Record<string, number> = { OPEN: 0, ACKNOWLEDGED: 1, RESOLVED: 2 }
+  return posts
+    .filter((p) => p.kind === 'FLAG')
+    .sort(
+      (a, b) =>
+        (order[a.status ?? 'OPEN'] ?? 0) - (order[b.status ?? 'OPEN'] ?? 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+}
+
+export function discussionPosts(posts: Post[]): Post[] {
+  return posts
+    .filter((p) => p.kind === 'GENERAL')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+// ---------------- Relative time ----------------
+export function timeAgo(iso: string, now: number = Date.now()): string {
+  const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000))
+  if (s < 60) return 'just now'
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7) return `${d}d ago`
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+// ---------------- Queries ----------------
+export async function listPosts(leagueId: string): Promise<Post[]> {
+  const { data } = await platformDb
+    .from('tournament_posts')
+    .select('*')
+    .eq('league_id', leagueId)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  return data ?? []
+}
+
+export async function listReplies(postId: string): Promise<PostReply[]> {
+  const { data } = await platformDb
+    .from('tournament_post_replies')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+  return data ?? []
+}
+
+export async function createPost(
+  input: Partial<Post> & { league_id: string; body: string }
+): Promise<Post> {
+  const { data, error } = await platformDb.from('tournament_posts').insert(input).select().single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function updatePost(id: string, patch: Partial<Post>): Promise<void> {
+  const { error } = await platformDb
+    .from('tournament_posts')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deletePost(id: string): Promise<void> {
+  const { error } = await platformDb.from('tournament_posts').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export function setPinned(id: string, pinned: boolean): Promise<void> {
+  return updatePost(id, { is_pinned: pinned, pinned_at: pinned ? new Date().toISOString() : null })
+}
+
+export function setFlagStatus(id: string, status: FlagStatus): Promise<void> {
+  return updatePost(id, { status })
+}
+
+export async function addReply(
+  input: Partial<PostReply> & { post_id: string; body: string }
+): Promise<PostReply> {
+  const { data, error } = await platformDb.from('tournament_post_replies').insert(input).select().single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+// ---------------- Realtime ----------------
+/** Subscribe to live post/reply changes for one tournament. Returns an unsubscribe fn.
+ *  Replies carry no league_id, so we listen broadly and let the caller refetch. */
+export function subscribeToBoard(leagueId: string, onChange: () => void): () => void {
+  const channel = platformDb
+    .channel(`pavilion:${leagueId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'tournament_posts', filter: `league_id=eq.${leagueId}` },
+      onChange
+    )
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_post_replies' }, onChange)
+    .subscribe()
+  return () => {
+    void platformDb.removeChannel(channel)
+  }
+}

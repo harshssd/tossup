@@ -140,6 +140,31 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["users"]["Row"]>
         Relationships: []
       }
+      tournament_posts: {
+        Row: {
+          id: string; league_id: string
+          kind: Database["public"]["Enums"]["post_kind"]
+          priority: Database["public"]["Enums"]["post_priority"]
+          title: string | null; body: string
+          author_name: string | null; author_id: string | null; is_host: boolean
+          is_pinned: boolean; pinned_at: string | null
+          status: Database["public"]["Enums"]["flag_status"] | null
+          expires_at: string | null; reply_count: number
+          created_at: string; updated_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]> & { league_id: string; body: string }
+        Update: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]>
+        Relationships: []
+      }
+      tournament_post_replies: {
+        Row: {
+          id: string; post_id: string; body: string
+          author_name: string | null; author_id: string | null; is_host: boolean; created_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["tournament_post_replies"]["Row"]> & { post_id: string; body: string }
+        Update: Partial<Database["public"]["Tables"]["tournament_post_replies"]["Row"]>
+        Relationships: []
+      }
     }
     Views: {
       tournament_standings: {
@@ -158,6 +183,9 @@ export type Database = {
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"
       recognition_tier: "OFFICIAL" | "AFFILIATED" | "COMMUNITY" | "UNVERIFIED"
       visibility: "PUBLIC" | "PRIVATE"
+      post_kind: "ANNOUNCEMENT" | "SCHEDULE" | "RESULT" | "ALERT" | "GENERAL" | "FLAG"
+      post_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
+      flag_status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED"
     }
     CompositeTypes: Record<string, never>
   }

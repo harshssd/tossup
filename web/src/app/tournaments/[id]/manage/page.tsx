@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { StandingsTable } from '@/components/platform/StandingsTable'
+import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import {
   addTournamentTeam,
@@ -103,6 +104,11 @@ export default function ManageTournamentPage() {
         ← {league.name}
       </Link>
       <h1 className="cy-display mt-2 text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage tournament</h1>
+
+      {/* Pavilion — host communications */}
+      <section className="mt-6">
+        <Pavilion leagueId={id} mode="host" />
+      </section>
 
       {/* Teams */}
       <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
