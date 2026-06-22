@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { MapPin, Search } from 'lucide-react'
 import { RecognitionBadge } from './RecognitionBadge'
-import { roleLabel, TIER_META, type Tier } from '@/lib/platform/recognition'
+import { initials, roleLabel, TIER_META, toTier } from '@/lib/platform/recognition'
 import type { PlayerProfile } from '@/lib/platform/queries'
 
 const ROLE_COLOR: Record<string, string> = {
@@ -11,12 +11,8 @@ const ROLE_COLOR: Record<string, string> = {
   WICKETKEEPER: '#bd8b1a',
 }
 
-function initials(name: string) {
-  return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
-}
-
 export function PlayerCard({ player, index = 0 }: { player: PlayerProfile; index?: number }) {
-  const tier = player.recognition_tier as Tier
+  const tier = toTier(player.recognition_tier)
   const place = [player.city, player.region, player.country].filter(Boolean).join(', ')
   const color = (player.primary_role && ROLE_COLOR[player.primary_role]) || '#6f6c63'
   return (

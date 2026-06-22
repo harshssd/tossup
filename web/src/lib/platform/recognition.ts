@@ -17,12 +17,23 @@ export function tierRank(t: Tier): number {
   return TIERS.indexOf(t)
 }
 
+/** Coerce an unknown DB value to a valid Tier (defaults to UNVERIFIED) so
+ *  TIER_META lookups never crash on a stale/unexpected value. */
+export function toTier(value: unknown): Tier {
+  return (TIERS as readonly string[]).includes(value as string) ? (value as Tier) : 'UNVERIFIED'
+}
+
 export const PLAYING_ROLES = ['BATSMAN', 'BOWLER', 'ALL_ROUNDER', 'WICKETKEEPER'] as const
 export type PlayingRole = (typeof PLAYING_ROLES)[number]
 
 export function roleLabel(r?: string | null): string {
   if (!r) return '—'
   return r.replace('_', '-').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** First letters of the first two words, uppercased — for avatar monograms. */
+export function initials(name: string): string {
+  return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()
 }
 
 // Countries we anchor recognition + proximity around first (extensible).

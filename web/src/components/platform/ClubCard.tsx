@@ -1,20 +1,11 @@
 import Link from 'next/link'
 import { MapPin, UserPlus } from 'lucide-react'
 import { RecognitionBadge } from './RecognitionBadge'
-import { roleLabel, TIER_META, type Tier } from '@/lib/platform/recognition'
+import { initials, roleLabel, TIER_META, toTier } from '@/lib/platform/recognition'
 import type { Club } from '@/lib/platform/queries'
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-}
-
 export function ClubCard({ club, index = 0 }: { club: Club; index?: number }) {
-  const tier = club.recognition_tier as Tier
+  const tier = toTier(club.recognition_tier)
   const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
   return (
     <Link href={`/club/${club.slug}`} className="cy-rise block" style={{ animationDelay: `${index * 45}ms` }}>

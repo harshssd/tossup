@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { MapPin, CalendarDays, Trophy } from 'lucide-react'
 import { RecognitionBadge } from './RecognitionBadge'
-import { TIER_META, type Tier } from '@/lib/platform/recognition'
+import { TIER_META, toTier } from '@/lib/platform/recognition'
 import type { League } from '@/lib/platform/queries'
 
 const REG_TONE: Record<string, string> = {
@@ -11,7 +11,7 @@ const REG_TONE: Record<string, string> = {
 }
 
 export function TournamentCard({ league, index = 0 }: { league: League; index?: number }) {
-  const tier = league.recognition_tier as Tier
+  const tier = toTier(league.recognition_tier)
   const place = [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue
   return (
     <Link href={`/tournaments/${league.id}`} className="cy-rise block" style={{ animationDelay: `${index * 45}ms` }}>

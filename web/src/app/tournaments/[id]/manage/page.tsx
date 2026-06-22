@@ -113,7 +113,7 @@ export default function ManageTournamentPage() {
           {teams.length === 0 && <span className="text-sm text-[#9a978d]">No teams yet — add some below.</span>}
           {teams.map((t) => (
             <span key={t.id} className="inline-flex items-center gap-2 rounded-full border border-[#e7e4db] bg-[#f6f5f1] px-3 py-1 text-xs font-semibold text-[#16150f]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--neon-cyan)]" /> {t.name}
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d57]" /> {t.name}
             </span>
           ))}
         </div>
@@ -156,12 +156,12 @@ export default function ManageTournamentPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-[#e7e4db] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6f6c63]">{fx.status}</span>
-                  <Button size="sm" variant="ghost" className="text-[var(--neon-cyan)] hover:text-[#16150f]" onClick={() => setEditing(editing === fx.id ? null : fx.id)}>
+                  <Button size="sm" variant="ghost" className="text-[#0f5a30] hover:text-[#16150f]" onClick={() => setEditing(editing === fx.id ? null : fx.id)}>
                     {fx.status === 'COMPLETED' ? 'Edit' : 'Enter result'}
                   </Button>
                 </div>
               </div>
-              {fx.result_note && <p className="mt-1.5 text-xs font-semibold text-[var(--neon-lime)]">{fx.result_note}</p>}
+              {fx.result_note && <p className="mt-1.5 text-xs font-semibold text-[#0f5a30]">{fx.result_note}</p>}
               {editing === fx.id && (
                 <ResultForm fixture={fx} onSaved={() => { setEditing(null); load() }} />
               )}
@@ -195,12 +195,16 @@ function ResultForm({ fixture, onSaved }: { fixture: Fixture; onSaved: () => voi
   const [saving, setSaving] = useState(false)
 
   async function save() {
+    if (resultType === 'WIN' && aR === bR) {
+      toast.error('Scores are level — pick "Tie", or set a winning score.')
+      return
+    }
     setSaving(true)
     let winner_team_id: string | null = null
     let note = ''
     if (resultType === 'WIN') {
-      winner_team_id = aR >= bR ? fixture.team_a_id : fixture.team_b_id
-      const winName = aR >= bR ? fixture.team_a_name : fixture.team_b_name
+      winner_team_id = aR > bR ? fixture.team_a_id : fixture.team_b_id
+      const winName = aR > bR ? fixture.team_a_name : fixture.team_b_name
       const margin = Math.abs(aR - bR)
       note = `${winName} won by ${margin} run${margin === 1 ? '' : 's'}`
     } else if (resultType === 'TIE') {
