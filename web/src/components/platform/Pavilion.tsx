@@ -14,7 +14,7 @@ import {
   type Post,
   type Lane,
 } from '@/lib/platform/pavilion'
-import { getViewerId } from '@/lib/platform/viewer'
+import { getViewerId, getSeenAt, setSeenAt } from '@/lib/platform/viewer'
 
 interface Props {
   leagueId: string
@@ -35,6 +35,9 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
   const [now, setNow] = useState(() => Date.now())
   const [acked, setAcked] = useState<Set<string>>(new Set())
   const [viewerId] = useState(getViewerId)
+  // "What's new": posts created after this marker are flagged NEW. First visit
+  // baselines to now (nothing shows as new); later visits show the delta.
+  const [seenAt, setSeenAtState] = useState(() => getSeenAt(leagueId) || Date.now())
   const seq = useRef(0)
 
   const load = useCallback(async () => {
@@ -68,6 +71,19 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
     return () => clearInterval(t)
   }, [])
 
+  // Persist a baseline on first visit, and mark the board seen on leave so the
+  // next visit's NEW markers reflect only what arrived while away.
+  useEffect(() => {
+    if (!getSeenAt(leagueId)) setSeenAt(leagueId, Date.now())
+    return () => setSeenAt(leagueId, Date.now())
+  }, [leagueId])
+
+  const markAllSeen = useCallback(() => {
+    const ts = Date.now()
+    setSeenAtState(ts)
+    setSeenAt(leagueId, ts)
+  }, [leagueId])
+
   const { pinned, feed } = useMemo(() => rankAnnouncements(posts, now), [posts, now])
   const discussion = useMemo(() => discussionPosts(posts), [posts])
   const flags = useMemo(() => rankFlags(posts), [posts])
@@ -79,14 +95,34 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
     flags: flags.length,
   }
 
+  const isNewPost = useCallback((p: Post) => new Date(p.created_at).getTime() > seenAt, [seenAt])
+  const unseen: Record<Lane, number> = {
+    announcements: [...pinned, ...feed].filter(isNewPost).length,
+    discussion: discussion.filter(isNewPost).length,
+    flags: flags.filter(isNewPost).length,
+  }
+  const totalUnseen = unseen.announcements + unseen.discussion + unseen.flags
+
   const renderPost = (p: Post) => (
-    <PavilionPost key={p.id} post={p} mode={mode} acked={acked.has(p.id)} viewerId={viewerId} onChanged={load} />
+    <PavilionPost key={p.id} post={p} mode={mode} acked={acked.has(p.id)} viewerId={viewerId} isNew={isNewPost(p)} onChanged={load} />
   )
 
   return (
     <div className="cy-panel overflow-hidden rounded-2xl">
       <div className="border-b border-[#ece9e1] bg-[#f6f5f1] px-5 py-4">
-        <h2 className="cy-display text-xl font-semibold text-[#16150f]">The Pavilion</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">The Pavilion</h2>
+          {totalUnseen > 0 && (
+            <button
+              onClick={markAllSeen}
+              title="Mark all as seen"
+              className="flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-[#0f5a30]"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+              {totalUnseen} new
+            </button>
+          )}
+        </div>
         <p className="mt-0.5 text-xs text-[#6f6c63]">
           Announcements, discussion &amp; flags — the latest and most relevant rise to the top.
         </p>
@@ -101,6 +137,9 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
             >
               <Icon className="h-3.5 w-3.5" />
               {label}
+              {unseen[key] > 0 && lane !== key && (
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d57]" title={`${unseen[key]} new`} />
+              )}
               <span className={`rounded-full px-1.5 text-[10px] ${lane === key ? 'bg-white/20' : 'bg-[#eef0ea]'}`}>
                 {counts[key]}
               </span>
