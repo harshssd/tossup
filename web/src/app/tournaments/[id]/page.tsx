@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { MatchCard } from '@/components/platform/MatchCard'
+import { Pavilion } from '@/components/platform/Pavilion'
 import { type Tier } from '@/lib/platform/recognition'
 import { getTournament } from '@/lib/platform/queries'
 import { PlatformShell } from '@/components/platform/PlatformShell'
@@ -56,6 +57,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
             <Settings className="h-4 w-4" /> Manage tournament
           </Button>
         </Link>
+      </div>
+
+      <div className="mt-8">
+        <Pavilion leagueId={league.id} mode="public" />
       </div>
 
       <h2 className="cy-display mt-10 text-2xl font-semibold text-[#16150f]">Standings</h2>
