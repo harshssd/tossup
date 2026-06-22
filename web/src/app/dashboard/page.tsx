@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   Bell,
+  Compass,
   Activity,
   Crown,
   Shield,
@@ -237,6 +238,12 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-bold text-foreground">TossUp</h1>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/discover">
+                    <Compass className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Discover</span>
+                  </Link>
+                </Button>
                 <Button variant="ghost" size="icon" className="hidden sm:flex">
                   <Bell className="h-4 w-4" />
                 </Button>

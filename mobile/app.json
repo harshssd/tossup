@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "TossUp Cricket",
+    "slug": "tossup-cricket",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "tossupcricket",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tossup.cricket"
+    },
+    "android": {
+      "package": "com.tossup.cricket",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

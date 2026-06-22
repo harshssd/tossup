@@ -63,6 +63,11 @@ function isPublicRoute(pathname: string): boolean {
     '/live',
     '/explore',
     '/tournament',
+    // Platform (community/discovery) public surfaces. Trailing slashes on
+    // /club/ and /player/ avoid exposing the legacy /clubs dashboard route.
+    '/discover',
+    '/club/',
+    '/player/',
     '/api/health',
     '/api/auth',
   ]
