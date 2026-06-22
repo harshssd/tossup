@@ -150,10 +150,19 @@ export type Database = {
           is_pinned: boolean; pinned_at: string | null
           status: Database["public"]["Enums"]["flag_status"] | null
           expires_at: string | null; reply_count: number
+          requires_ack: boolean; ack_count: number
           created_at: string; updated_at: string
         }
         Insert: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]> & { league_id: string; body: string }
         Update: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]>
+        Relationships: []
+      }
+      tournament_post_acks: {
+        Row: {
+          id: string; post_id: string; viewer_id: string; viewer_name: string | null; created_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["tournament_post_acks"]["Row"]> & { post_id: string; viewer_id: string }
+        Update: Partial<Database["public"]["Tables"]["tournament_post_acks"]["Row"]>
         Relationships: []
       }
       tournament_post_replies: {

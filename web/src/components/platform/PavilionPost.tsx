@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Pin, PinOff, Trash2, MessageCircle, ShieldCheck, CornerDownRight } from 'lucide-react'
+import { Pin, PinOff, Trash2, MessageCircle, ShieldCheck, CornerDownRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { initials } from '@/lib/platform/recognition'
 import {
+  acknowledge,
+  unacknowledge,
   addReply,
   deletePost,
   listReplies,
@@ -25,6 +27,8 @@ import {
 interface Props {
   post: Post
   mode: 'public' | 'host'
+  acked: boolean
+  viewerId: string
   onChanged: () => void
 }
 
@@ -34,7 +38,7 @@ const FLAG_NEXT: Record<FlagStatus, FlagStatus | null> = {
   RESOLVED: null,
 }
 
-export function PavilionPost({ post, mode, onChanged }: Props) {
+export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) {
   const kindMeta = KIND_META[post.kind]
   const prio = PRIORITY_META[post.priority]
   const showPrio = post.priority === 'URGENT' || post.priority === 'HIGH'
@@ -94,6 +98,17 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
     }
   }
 
+  async function toggleAck() {
+    if (!viewerId) return
+    try {
+      if (acked) await unacknowledge(post.id, viewerId)
+      else await acknowledge(post.id, viewerId)
+      onChanged()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
   async function remove() {
     if (!confirm('Delete this post and its replies?')) return
     try {
@@ -142,6 +157,25 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
           <p className="mt-1.5 text-[11px] font-semibold text-[#9a978d]">
             {post.is_host ? HOST_LABEL : post.author_name || ANON_LABEL}
           </p>
+
+          {post.requires_ack && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-lg border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2">
+              <button
+                onClick={toggleAck}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  acked ? 'bg-[#1f9d57] text-white' : 'border border-[#1f9d57] text-[#0f5a30] hover:bg-[#e7f4ec]'
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {acked ? 'Acknowledged' : 'Acknowledge'}
+              </button>
+              <span className="text-xs font-semibold text-[#6f6c63]">
+                {post.ack_count > 0
+                  ? `${post.ack_count} ${post.ack_count === 1 ? 'person has' : 'people have'} acknowledged`
+                  : 'Awaiting acknowledgement'}
+              </span>
+            </div>
+          )}
 
           <div className="mt-2.5 flex flex-wrap items-center gap-3">
             <button onClick={() => setExpanded((v) => !v)} className="flex items-center gap-1 text-xs font-semibold text-[#6f6c63] hover:text-[#0f5a30]">
