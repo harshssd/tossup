@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Instrument_Serif } from "next/font/google";
+import { Inter, Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import PostHogProvider from "@/components/PostHogProvider";
 import "./globals.css";
@@ -13,6 +13,13 @@ const instrumentSerif = Instrument_Serif({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
+});
+
+// Clubhouse design system — friendly geometric sans for the platform UI.
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${instrumentSerif.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+        className={`${inter.variable} ${instrumentSerif.variable} ${jakarta.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
       >
         <PostHogProvider>
           {children}

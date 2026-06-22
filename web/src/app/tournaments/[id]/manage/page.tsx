@@ -1,0 +1,262 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { toast } from 'sonner'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { StandingsTable } from '@/components/platform/StandingsTable'
+import { PlatformShell } from '@/components/platform/PlatformShell'
+import {
+  addTournamentTeam,
+  createFixture,
+  getTournament,
+  saveFixtureResult,
+  type Fixture,
+  type League,
+  type Standing,
+  type TournamentTeam,
+} from '@/lib/platform/queries'
+
+const inputCls = 'h-9'
+const selCls = 'h-9 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
+
+export default function ManageTournamentPage() {
+  const { id } = useParams<{ id: string }>()
+  const [league, setLeague] = useState<League | null>(null)
+  const [teams, setTeams] = useState<TournamentTeam[]>([])
+  const [fixtures, setFixtures] = useState<Fixture[]>([])
+  const [standings, setStandings] = useState<Standing[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    if (!id) return
+    const t = await getTournament(id)
+    setLeague(t.league)
+    setTeams(t.teams)
+    setFixtures(t.fixtures)
+    setStandings(t.standings)
+    setLoading(false)
+  }, [id])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function onAddTeam(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const name = String(f.get('name') || '').trim()
+    if (!name) return
+    try {
+      await addTournamentTeam({
+        league_id: id,
+        name,
+        captain_name: String(f.get('captain') || '').trim() || null,
+        contact_phone: String(f.get('contact') || '').trim() || null,
+      })
+      e.currentTarget.reset()
+      toast.success('Team added')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onAddFixture(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const aId = String(f.get('team_a') || '')
+    const bId = String(f.get('team_b') || '')
+    if (!aId || !bId || aId === bId) {
+      toast.error('Pick two different teams')
+      return
+    }
+    try {
+      await createFixture({
+        league_id: id,
+        team_a_id: aId,
+        team_b_id: bId,
+        team_a_name: teams.find((t) => t.id === aId)?.name ?? null,
+        team_b_name: teams.find((t) => t.id === bId)?.name ?? null,
+        match_number: f.get('match_number') ? Number(f.get('match_number')) : null,
+        venue: String(f.get('venue') || '').trim() || null,
+        scheduled_at: f.get('scheduled_at') ? new Date(String(f.get('scheduled_at'))).toISOString() : null,
+      })
+      e.currentTarget.reset()
+      toast.success('Fixture added')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  if (loading) return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Loading…</div>
+  if (!league) return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Not found.</div>
+
+  return (
+    <PlatformShell>
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <Link href={`/tournaments/${id}`} className="text-xs font-semibold uppercase tracking-wider text-[#9a978d] hover:text-[#16150f]">
+        ← {league.name}
+      </Link>
+      <h1 className="cy-display mt-2 text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage tournament</h1>
+
+      {/* Teams */}
+      <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <h2 className="cy-display text-xl font-semibold text-[#16150f]">
+          Teams <span className="text-[#9a978d]">({teams.length})</span>
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {teams.length === 0 && <span className="text-sm text-[#9a978d]">No teams yet — add some below.</span>}
+          {teams.map((t) => (
+            <span key={t.id} className="inline-flex items-center gap-2 rounded-full border border-[#e7e4db] bg-[#f6f5f1] px-3 py-1 text-xs font-semibold text-[#16150f]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--neon-cyan)]" /> {t.name}
+            </span>
+          ))}
+        </div>
+        <form onSubmit={onAddTeam} className="mt-4 flex flex-wrap gap-2">
+          <Input name="name" placeholder="Team name" className={`${inputCls} w-40`} />
+          <Input name="captain" placeholder="Captain" className={`${inputCls} w-32`} />
+          <Input name="contact" placeholder="Contact" className={`${inputCls} w-32`} />
+          <Button type="submit" size="sm" className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">Add team</Button>
+        </form>
+      </section>
+
+      {/* Fixtures */}
+      <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <h2 className="cy-display text-xl font-semibold text-[#16150f]">Fixtures</h2>
+        <form onSubmit={onAddFixture} className="mt-3 flex flex-wrap items-center gap-2">
+          <select name="team_a" className={selCls} required defaultValue="">
+            <option value="" disabled>Team A</option>
+            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <span className="text-xs font-bold uppercase text-[#9a978d]">vs</span>
+          <select name="team_b" className={selCls} required defaultValue="">
+            <option value="" disabled>Team B</option>
+            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <Input name="match_number" type="number" placeholder="#" className={`${inputCls} w-16`} />
+          <Input name="venue" placeholder="Venue" className={`${inputCls} w-28`} />
+          <Input name="scheduled_at" type="datetime-local" className={`${inputCls} w-44`} />
+          <Button type="submit" size="sm" disabled={teams.length < 2} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">Add fixture</Button>
+        </form>
+
+        <div className="mt-4 space-y-2.5">
+          {fixtures.length === 0 && <p className="text-sm text-[#9a978d]">No fixtures yet.</p>}
+          {fixtures.map((fx) => (
+            <div key={fx.id} className="rounded-xl border border-[#e7e4db] bg-[#eef0ea] p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2.5 text-sm font-bold text-[#16150f]">
+                  {fx.team_a_name}
+                  <span className="cy-vs" style={{ width: '1.4rem', height: '1.4rem', fontSize: '0.5rem' }}>VS</span>
+                  {fx.team_b_name}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full border border-[#e7e4db] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6f6c63]">{fx.status}</span>
+                  <Button size="sm" variant="ghost" className="text-[var(--neon-cyan)] hover:text-[#16150f]" onClick={() => setEditing(editing === fx.id ? null : fx.id)}>
+                    {fx.status === 'COMPLETED' ? 'Edit' : 'Enter result'}
+                  </Button>
+                </div>
+              </div>
+              {fx.result_note && <p className="mt-1.5 text-xs font-semibold text-[var(--neon-lime)]">{fx.result_note}</p>}
+              {editing === fx.id && (
+                <ResultForm fixture={fx} onSaved={() => { setEditing(null); load() }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Standings */}
+      <section className="mt-6">
+        <h2 className="cy-display text-xl font-semibold text-[#16150f]">
+          Standings <span className="text-[#9a978d]">(auto)</span>
+        </h2>
+        <div className="mt-3">
+          <StandingsTable rows={standings} />
+        </div>
+      </section>
+    </div>
+    </PlatformShell>
+  )
+}
+
+function ResultForm({ fixture, onSaved }: { fixture: Fixture; onSaved: () => void }) {
+  const [aR, setAR] = useState(fixture.team_a_runs ?? 0)
+  const [aW, setAW] = useState(fixture.team_a_wickets ?? 0)
+  const [aO, setAO] = useState(fixture.team_a_overs ?? 0)
+  const [bR, setBR] = useState(fixture.team_b_runs ?? 0)
+  const [bW, setBW] = useState(fixture.team_b_wickets ?? 0)
+  const [bO, setBO] = useState(fixture.team_b_overs ?? 0)
+  const [resultType, setResultType] = useState(fixture.result_type ?? 'WIN')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    let winner_team_id: string | null = null
+    let note = ''
+    if (resultType === 'WIN') {
+      winner_team_id = aR >= bR ? fixture.team_a_id : fixture.team_b_id
+      const winName = aR >= bR ? fixture.team_a_name : fixture.team_b_name
+      const margin = Math.abs(aR - bR)
+      note = `${winName} won by ${margin} run${margin === 1 ? '' : 's'}`
+    } else if (resultType === 'TIE') {
+      note = 'Match tied'
+    } else if (resultType === 'NO_RESULT') {
+      note = 'No result'
+    } else {
+      note = 'Abandoned'
+    }
+    try {
+      await saveFixtureResult(fixture.id, {
+        team_a_runs: aR, team_a_wickets: aW, team_a_overs: aO,
+        team_b_runs: bR, team_b_wickets: bW, team_b_overs: bO,
+        result_type: resultType,
+        winner_team_id,
+        result_note: note,
+        status: resultType === 'ABANDONED' ? 'ABANDONED' : 'COMPLETED',
+      })
+      toast.success('Result saved')
+      onSaved()
+    } catch (err) {
+      toast.error((err as Error).message)
+      setSaving(false)
+    }
+  }
+
+  const cell = 'h-8 w-16 rounded border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm'
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-[#e7e4db] p-3">
+      <ScoreRow label={fixture.team_a_name ?? 'Team A'} r={aR} w={aW} o={aO} setR={setAR} setW={setAW} setO={setAO} cls={cell} />
+      <ScoreRow label={fixture.team_b_name ?? 'Team B'} r={bR} w={bW} o={bO} setR={setBR} setW={setBW} setO={setBO} cls={cell} />
+      <div className="flex items-center gap-2">
+        <select value={resultType} onChange={(e) => setResultType(e.target.value)} className="h-8 rounded border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm">
+          <option value="WIN">Win/Loss</option>
+          <option value="TIE">Tie</option>
+          <option value="NO_RESULT">No result</option>
+          <option value="ABANDONED">Abandoned</option>
+        </select>
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save result'}</Button>
+      </div>
+    </div>
+  )
+}
+
+function ScoreRow({
+  label, r, w, o, setR, setW, setO, cls,
+}: {
+  label: string; r: number; w: number; o: number
+  setR: (n: number) => void; setW: (n: number) => void; setO: (n: number) => void; cls: string
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-28 truncate text-sm">{label}</span>
+      <input type="number" value={r} onChange={(e) => setR(Number(e.target.value))} className={cls} placeholder="Runs" />
+      <input type="number" value={w} onChange={(e) => setW(Number(e.target.value))} className={cls} placeholder="Wkts" />
+      <input type="number" step="0.1" value={o} onChange={(e) => setO(Number(e.target.value))} className={cls} placeholder="Overs" />
+    </div>
+  )
+}
