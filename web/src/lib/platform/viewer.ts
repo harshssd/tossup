@@ -5,10 +5,16 @@ const KEY = 'tossup-viewer-id'
 
 export function getViewerId(): string {
   if (typeof window === 'undefined') return ''
-  let id = window.localStorage.getItem(KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    window.localStorage.setItem(KEY, id)
+  // localStorage can throw (Safari private mode, storage disabled). Never let
+  // that crash the caller — this runs in a render-phase useState initializer.
+  try {
+    let id = window.localStorage.getItem(KEY)
+    if (!id) {
+      id = crypto.randomUUID()
+      window.localStorage.setItem(KEY, id)
+    }
+    return id
+  } catch {
+    return ''
   }
-  return id
 }

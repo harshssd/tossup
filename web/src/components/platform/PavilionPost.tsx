@@ -49,6 +49,7 @@ export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) 
   const [replies, setReplies] = useState<PostReply[]>([])
   const [replyText, setReplyText] = useState('')
   const [busy, setBusy] = useState(false)
+  const [ackBusy, setAckBusy] = useState(false)
 
   const loadReplies = useCallback(async () => {
     setReplies(await listReplies(post.id))
@@ -99,13 +100,16 @@ export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) 
   }
 
   async function toggleAck() {
-    if (!viewerId) return
+    if (!viewerId || ackBusy) return
+    setAckBusy(true)
     try {
       if (acked) await unacknowledge(post.id, viewerId)
       else await acknowledge(post.id, viewerId)
       onChanged()
     } catch (err) {
       toast.error((err as Error).message)
+    } finally {
+      setAckBusy(false)
     }
   }
 
@@ -162,7 +166,9 @@ export function PavilionPost({ post, mode, acked, viewerId, onChanged }: Props) 
             <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-lg border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2">
               <button
                 onClick={toggleAck}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                disabled={!viewerId || ackBusy}
+                title={!viewerId ? 'Acknowledgements need browser storage enabled' : undefined}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   acked ? 'bg-[#1f9d57] text-white' : 'border border-[#1f9d57] text-[#0f5a30] hover:bg-[#e7f4ec]'
                 }`}
               >
