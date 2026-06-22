@@ -189,6 +189,38 @@ export async function addReply(
   return data
 }
 
+// ---------------- Acknowledgements ----------------
+/** Which of these posts the given viewer has already acknowledged. */
+export async function listMyAcks(viewerId: string, postIds: string[]): Promise<Set<string>> {
+  if (!viewerId || postIds.length === 0) return new Set()
+  const { data, error } = await platformDb
+    .from('tournament_post_acks')
+    .select('post_id')
+    .eq('viewer_id', viewerId)
+    .in('post_id', postIds)
+  if (error) console.error('listMyAcks:', error.message)
+  return new Set((data ?? []).map((a) => a.post_id))
+}
+
+/** Record an acknowledgement. Idempotent: a repeat from the same browser is a
+ *  no-op (UNIQUE(post_id, viewer_id) + ignoreDuplicates), so the count can't be
+ *  inflated and the trigger only fires on a genuine first insert. */
+export async function acknowledge(postId: string, viewerId: string, viewerName?: string | null): Promise<void> {
+  const { error } = await platformDb
+    .from('tournament_post_acks')
+    .upsert({ post_id: postId, viewer_id: viewerId, viewer_name: viewerName ?? null }, { onConflict: 'post_id,viewer_id', ignoreDuplicates: true })
+  if (error) throw new Error(error.message)
+}
+
+export async function unacknowledge(postId: string, viewerId: string): Promise<void> {
+  const { error } = await platformDb
+    .from('tournament_post_acks')
+    .delete()
+    .eq('post_id', postId)
+    .eq('viewer_id', viewerId)
+  if (error) throw new Error(error.message)
+}
+
 // ---------------- Realtime ----------------
 /** Subscribe to live changes for one tournament's board. Returns an unsubscribe fn.
  *  We listen ONLY to this league's tournament_posts: the reply-count trigger

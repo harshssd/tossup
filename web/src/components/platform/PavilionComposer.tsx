@@ -42,13 +42,14 @@ export function PavilionComposer({ leagueId, variant, onPosted }: Props) {
   const [kind, setKind] = useState<PostKind>('ANNOUNCEMENT')
   const [priority, setPriority] = useState<PostPriority>('NORMAL')
   const [pinned, setPinned] = useState(false)
+  const [requiresAck, setRequiresAck] = useState(false)
   const [expiresAt, setExpiresAt] = useState('')
 
   const copy = VARIANT_COPY[variant]
 
   function reset() {
     setBody(''); setTitle(''); setName(''); setKind('ANNOUNCEMENT')
-    setPriority('NORMAL'); setPinned(false); setExpiresAt('')
+    setPriority('NORMAL'); setPinned(false); setRequiresAck(false); setExpiresAt('')
   }
 
   async function submit() {
@@ -72,6 +73,7 @@ export function PavilionComposer({ leagueId, variant, onPosted }: Props) {
         is_host: variant === 'announcement',
         is_pinned: variant === 'announcement' ? pinned : false,
         pinned_at: variant === 'announcement' && pinned ? new Date().toISOString() : null,
+        requires_ack: variant === 'announcement' ? requiresAck : false,
         status: variant === 'flag' ? 'OPEN' : null,
         author_name: name.trim() || (variant === 'announcement' ? HOST_LABEL : ANON_LABEL),
         expires_at: variant === 'announcement' && expiresAt ? new Date(expiresAt).toISOString() : null,
@@ -130,6 +132,10 @@ export function PavilionComposer({ leagueId, variant, onPosted }: Props) {
             <label className="flex items-center gap-1.5 text-xs font-semibold text-[#6f6c63]">
               <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-[#1f9d57]" />
               Pin to top
+            </label>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#6f6c63]">
+              <input type="checkbox" checked={requiresAck} onChange={(e) => setRequiresAck(e.target.checked)} className="accent-[#1f9d57]" />
+              Request acknowledgement
             </label>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-[#6f6c63]">
               Expires

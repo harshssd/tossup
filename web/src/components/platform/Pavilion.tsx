@@ -6,6 +6,7 @@ import { PavilionPost } from './PavilionPost'
 import { PavilionComposer } from './PavilionComposer'
 import {
   listPosts,
+  listMyAcks,
   subscribeToBoard,
   rankAnnouncements,
   discussionPosts,
@@ -13,6 +14,7 @@ import {
   type Post,
   type Lane,
 } from '@/lib/platform/pavilion'
+import { getViewerId } from '@/lib/platform/viewer'
 
 interface Props {
   leagueId: string
@@ -31,6 +33,8 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
   const [loading, setLoading] = useState(true)
   const [lane, setLane] = useState<Lane>(defaultLane)
   const [now, setNow] = useState(() => Date.now())
+  const [acked, setAcked] = useState<Set<string>>(new Set())
+  const [viewerId] = useState(getViewerId)
   const seq = useRef(0)
 
   const load = useCallback(async () => {
@@ -40,7 +44,10 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
     if (my !== seq.current) return
     setPosts(data)
     setLoading(false)
-  }, [leagueId])
+    const ackSet = await listMyAcks(viewerId, data.map((p) => p.id))
+    if (my !== seq.current) return
+    setAcked(ackSet)
+  }, [leagueId, viewerId])
 
   useEffect(() => {
     void load()
@@ -71,6 +78,10 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
     discussion: discussion.length,
     flags: flags.length,
   }
+
+  const renderPost = (p: Post) => (
+    <PavilionPost key={p.id} post={p} mode={mode} acked={acked.has(p.id)} viewerId={viewerId} onChanged={load} />
+  )
 
   return (
     <div className="cy-panel overflow-hidden rounded-2xl">
@@ -113,10 +124,10 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
             {pinned.length > 0 && (
               <div className="space-y-2.5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9a6b09]">Pinned</p>
-                {pinned.map((p) => <PavilionPost key={p.id} post={p} mode={mode} onChanged={load} />)}
+                {pinned.map(renderPost)}
               </div>
             )}
-            {feed.map((p) => <PavilionPost key={p.id} post={p} mode={mode} onChanged={load} />)}
+            {feed.map(renderPost)}
           </>
         )}
 
@@ -124,7 +135,7 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
           <>
             <PavilionComposer leagueId={leagueId} variant="discussion" onPosted={load} />
             {discussion.length === 0 && <EmptyLane text="No discussion yet. Start the conversation above." />}
-            {discussion.map((p) => <PavilionPost key={p.id} post={p} mode={mode} onChanged={load} />)}
+            {discussion.map(renderPost)}
           </>
         )}
 
@@ -132,7 +143,7 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
           <>
             <PavilionComposer leagueId={leagueId} variant="flag" onPosted={load} />
             {flags.length === 0 && <EmptyLane text="Nothing flagged. Raise an issue for the host above." />}
-            {flags.map((p) => <PavilionPost key={p.id} post={p} mode={mode} onChanged={load} />)}
+            {flags.map(renderPost)}
           </>
         )}
       </div>
