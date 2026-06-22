@@ -8,6 +8,8 @@ import {
   createPost,
   ANNOUNCEMENT_COMPOSE_KINDS,
   PRIORITY_OPTIONS,
+  HOST_LABEL,
+  ANON_LABEL,
   type PostKind,
   type PostPriority,
 } from '@/lib/platform/pavilion'
@@ -55,6 +57,10 @@ export function PavilionComposer({ leagueId, variant, onPosted }: Props) {
       toast.error('Write a message first')
       return
     }
+    if (variant === 'announcement' && expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+      toast.error('Expiry must be in the future — it would hide this announcement immediately.')
+      return
+    }
     setSaving(true)
     try {
       await createPost({
@@ -67,7 +73,7 @@ export function PavilionComposer({ leagueId, variant, onPosted }: Props) {
         is_pinned: variant === 'announcement' ? pinned : false,
         pinned_at: variant === 'announcement' && pinned ? new Date().toISOString() : null,
         status: variant === 'flag' ? 'OPEN' : null,
-        author_name: name.trim() || (variant === 'announcement' ? 'Host' : 'Anonymous'),
+        author_name: name.trim() || (variant === 'announcement' ? HOST_LABEL : ANON_LABEL),
         expires_at: variant === 'announcement' && expiresAt ? new Date(expiresAt).toISOString() : null,
       })
       toast.success(variant === 'flag' ? 'Flag submitted' : 'Posted')

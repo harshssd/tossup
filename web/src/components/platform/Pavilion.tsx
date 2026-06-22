@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Megaphone, MessagesSquare, Flag } from 'lucide-react'
 import { PavilionPost } from './PavilionPost'
 import { PavilionComposer } from './PavilionComposer'
@@ -30,19 +30,38 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [lane, setLane] = useState<Lane>(defaultLane)
+  const [now, setNow] = useState(() => Date.now())
+  const seq = useRef(0)
 
   const load = useCallback(async () => {
-    setPosts(await listPosts(leagueId))
+    const my = ++seq.current
+    const data = await listPosts(leagueId)
+    // Drop the result if a newer load() (or a leagueId change) superseded this one.
+    if (my !== seq.current) return
+    setPosts(data)
     setLoading(false)
   }, [leagueId])
 
   useEffect(() => {
     void load()
-    const unsub = subscribeToBoard(leagueId, () => { void load() })
-    return unsub
+    // Coalesce realtime bursts: one reply fires both a reply row event and a
+    // parent-post UPDATE, and many viewers amplify it — debounce to one refetch.
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const unsub = subscribeToBoard(leagueId, () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => { void load() }, 300)
+    })
+    return () => { if (timer) clearTimeout(timer); unsub() }
   }, [leagueId, load])
 
-  const { pinned, feed } = useMemo(() => rankAnnouncements(posts), [posts])
+  // Re-evaluate expiry/recency on an idle board (no data change would otherwise
+  // re-run the ranking memo, so an expired notice would linger).
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const { pinned, feed } = useMemo(() => rankAnnouncements(posts, now), [posts, now])
   const discussion = useMemo(() => discussionPosts(posts), [posts])
   const flags = useMemo(() => rankFlags(posts), [posts])
   const openFlags = useMemo(() => flags.filter((f) => (f.status ?? 'OPEN') === 'OPEN').length, [flags])

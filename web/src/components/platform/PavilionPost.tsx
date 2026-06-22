@@ -15,6 +15,8 @@ import {
   KIND_META,
   PRIORITY_META,
   FLAG_STATUS_META,
+  HOST_LABEL,
+  ANON_LABEL,
   type Post,
   type PostReply,
   type FlagStatus,
@@ -49,15 +51,18 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
   }, [post.id])
 
   useEffect(() => {
-    if (expanded) void loadReplies()
-  }, [expanded, post.reply_count, loadReplies])
+    if (!expanded) return
+    let alive = true
+    void listReplies(post.id).then((d) => { if (alive) setReplies(d) })
+    return () => { alive = false }
+  }, [expanded, post.reply_count, post.id])
 
   async function sendReply() {
     const text = replyText.trim()
     if (!text) return
     setBusy(true)
     try {
-      await addReply({ post_id: post.id, body: text, is_host: mode === 'host', author_name: mode === 'host' ? 'Host' : 'Anonymous' })
+      await addReply({ post_id: post.id, body: text, is_host: mode === 'host', author_name: mode === 'host' ? HOST_LABEL : ANON_LABEL })
       setReplyText('')
       await loadReplies()
       onChanged()
@@ -107,7 +112,7 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
           className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
           style={post.is_host ? { background: '#0f5a30', color: '#fff' } : { background: '#eef0ea', color: '#6f6c63' }}
         >
-          {initials(post.author_name || (post.is_host ? 'Host' : 'A'))}
+          {initials(post.author_name || (post.is_host ? HOST_LABEL : 'A'))}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -135,7 +140,7 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
           {post.title && <h4 className="mt-1.5 font-bold text-[#16150f]">{post.title}</h4>}
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#3a382f]">{post.body}</p>
           <p className="mt-1.5 text-[11px] font-semibold text-[#9a978d]">
-            {post.is_host ? 'Host' : post.author_name || 'Anonymous'}
+            {post.is_host ? HOST_LABEL : post.author_name || ANON_LABEL}
           </p>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-3">
@@ -172,7 +177,7 @@ export function PavilionPost({ post, mode, onChanged }: Props) {
                   <div className="min-w-0 flex-1 rounded-lg bg-[#f6f5f1] px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className={`text-[11px] font-bold ${r.is_host ? 'text-[#0f5a30]' : 'text-[#16150f]'}`}>
-                        {r.is_host ? 'Host' : r.author_name || 'Anonymous'}
+                        {r.is_host ? HOST_LABEL : r.author_name || ANON_LABEL}
                       </span>
                       <span className="text-[10px] text-[#9a978d]">{timeAgo(r.created_at)}</span>
                     </div>

@@ -10,6 +10,10 @@ export type FlagStatus = Database['public']['Enums']['flag_status']
 
 export type Lane = 'announcements' | 'discussion' | 'flags'
 
+/** Author labels for the pre-auth era (single source of truth). */
+export const HOST_LABEL = 'Host'
+export const ANON_LABEL = 'Anonymous'
+
 /** Kinds that live in the Announcements lane (host broadcasts). */
 export const ANNOUNCEMENT_KINDS: PostKind[] = ['ANNOUNCEMENT', 'SCHEDULE', 'RESULT', 'ALERT']
 
@@ -66,15 +70,18 @@ export function isExpired(p: Post, now: number): boolean {
   return p.expires_at ? new Date(p.expires_at).getTime() < now : false
 }
 
-/** Split announcement posts into a host-curated pinned strip and a ranked feed. */
+/** Split announcement posts into a host-curated pinned strip and a ranked feed.
+ *  Expiry applies to pinned items too — a time-bound notice clears even when
+ *  pinned, so an expired pin can't sit at the top forever. id is the final,
+ *  deterministic tie-breaker so equal-score posts don't flicker between renders. */
 export function rankAnnouncements(posts: Post[], now: number = Date.now()): { pinned: Post[]; feed: Post[] } {
-  const ann = posts.filter((p) => ANNOUNCEMENT_KINDS.includes(p.kind))
+  const ann = posts.filter((p) => ANNOUNCEMENT_KINDS.includes(p.kind) && !isExpired(p, now))
   const pinned = ann
     .filter((p) => p.is_pinned)
-    .sort((a, b) => new Date(b.pinned_at ?? b.created_at).getTime() - new Date(a.pinned_at ?? a.created_at).getTime())
+    .sort((a, b) => new Date(b.pinned_at ?? b.created_at).getTime() - new Date(a.pinned_at ?? a.created_at).getTime() || a.id.localeCompare(b.id))
   const feed = ann
-    .filter((p) => !p.is_pinned && !isExpired(p, now))
-    .sort((a, b) => relevanceScore(b, now) - relevanceScore(a, now))
+    .filter((p) => !p.is_pinned)
+    .sort((a, b) => relevanceScore(b, now) - relevanceScore(a, now) || a.id.localeCompare(b.id))
   return { pinned, feed }
 }
 
@@ -86,14 +93,15 @@ export function rankFlags(posts: Post[]): Post[] {
     .sort(
       (a, b) =>
         (order[a.status ?? 'OPEN'] ?? 0) - (order[b.status ?? 'OPEN'] ?? 0) ||
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        a.id.localeCompare(b.id)
     )
 }
 
 export function discussionPosts(posts: Post[]): Post[] {
   return posts
     .filter((p) => p.kind === 'GENERAL')
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || a.id.localeCompare(b.id))
 }
 
 // ---------------- Relative time ----------------
@@ -111,21 +119,30 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
 
 // ---------------- Queries ----------------
 export async function listPosts(leagueId: string): Promise<Post[]> {
-  const { data } = await platformDb
-    .from('tournament_posts')
-    .select('*')
-    .eq('league_id', leagueId)
-    .order('created_at', { ascending: false })
-    .limit(200)
-  return data ?? []
+  // The 200 most recent posts PLUS every pinned / OPEN-flag row. On a busy
+  // tournament (>200 posts) a host's pinned notice or an unresolved flag could
+  // be older than the newest 200 and silently fall off the board — the worst
+  // failure for a comms hub. The sticky query (pinned OR open flag) is small
+  // and guarantees they're always present; we merge and dedupe by id.
+  const [recent, sticky] = await Promise.all([
+    platformDb.from('tournament_posts').select('*').eq('league_id', leagueId).order('created_at', { ascending: false }).limit(200),
+    platformDb.from('tournament_posts').select('*').eq('league_id', leagueId).or('is_pinned.eq.true,status.eq.OPEN'),
+  ])
+  if (recent.error) console.error('listPosts (recent):', recent.error.message)
+  if (sticky.error) console.error('listPosts (sticky):', sticky.error.message)
+  const byId = new Map<string, Post>()
+  for (const p of recent.data ?? []) byId.set(p.id, p)
+  for (const p of sticky.data ?? []) byId.set(p.id, p)
+  return [...byId.values()]
 }
 
 export async function listReplies(postId: string): Promise<PostReply[]> {
-  const { data } = await platformDb
+  const { data, error } = await platformDb
     .from('tournament_post_replies')
     .select('*')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
+  if (error) console.error('listReplies:', error.message)
   return data ?? []
 }
 
@@ -138,9 +155,15 @@ export async function createPost(
 }
 
 export async function updatePost(id: string, patch: Partial<Post>): Promise<void> {
+  // Never let a caller clobber server-maintained columns (reply_count is owned
+  // by the trigger; id/created_at are immutable).
+  const safe: Partial<Post> = { ...patch }
+  delete safe.id
+  delete safe.reply_count
+  delete safe.created_at
   const { error } = await platformDb
     .from('tournament_posts')
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update({ ...safe, updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw new Error(error.message)
 }
@@ -167,17 +190,21 @@ export async function addReply(
 }
 
 // ---------------- Realtime ----------------
-/** Subscribe to live post/reply changes for one tournament. Returns an unsubscribe fn.
- *  Replies carry no league_id, so we listen broadly and let the caller refetch. */
+/** Subscribe to live changes for one tournament's board. Returns an unsubscribe fn.
+ *  We listen ONLY to this league's tournament_posts: the reply-count trigger
+ *  UPDATEs the parent post on every reply insert/delete, so reply activity
+ *  surfaces through the league-filtered posts stream. That avoids a broad,
+ *  cross-tournament reply feed that would refetch every open board on any
+ *  reply platform-wide. The channel name carries a per-instance suffix so two
+ *  mounts of the same league (e.g. StrictMode double-mount) don't collide. */
 export function subscribeToBoard(leagueId: string, onChange: () => void): () => void {
   const channel = platformDb
-    .channel(`pavilion:${leagueId}`)
+    .channel(`pavilion:${leagueId}:${crypto.randomUUID()}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'tournament_posts', filter: `league_id=eq.${leagueId}` },
       onChange
     )
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_post_replies' }, onChange)
     .subscribe()
   return () => {
     void platformDb.removeChannel(channel)
