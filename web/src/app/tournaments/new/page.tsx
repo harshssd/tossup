@@ -27,6 +27,10 @@ export default function NewTournamentPage() {
       .then(({ data }) => {
         if (!cancelled) setAuthState(data.user ? 'ok' : 'guest')
       })
+      .catch(() => {
+        // Fail closed: treat an auth-check error as signed-out (shows sign-in CTA).
+        if (!cancelled) setAuthState('guest')
+      })
     return () => {
       cancelled = true
     }

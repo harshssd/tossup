@@ -39,10 +39,15 @@ export default function ManageTournamentPage() {
   useEffect(() => {
     if (!id) return
     let cancelled = false
-    getTournamentAdminState(id).then(({ signedIn, isAdmin }) => {
-      if (cancelled) return
-      setAccess(!signedIn ? 'guest' : isAdmin ? 'ok' : 'denied')
-    })
+    getTournamentAdminState(id)
+      .then(({ signedIn, isAdmin }) => {
+        if (cancelled) return
+        setAccess(!signedIn ? 'guest' : isAdmin ? 'ok' : 'denied')
+      })
+      .catch(() => {
+        // Fail closed: a failed admin check must not unlock management.
+        if (!cancelled) setAccess('denied')
+      })
     return () => {
       cancelled = true
     }
