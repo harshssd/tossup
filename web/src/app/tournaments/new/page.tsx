@@ -1,13 +1,14 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { createTournament } from '@/lib/platform/queries'
+import { createOwnedTournament } from '@/lib/platform/tournament-host'
+import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import { COUNTRIES } from '@/lib/platform/recognition'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 
@@ -16,6 +17,24 @@ const TYPES = ['TOURNAMENT', 'LEAGUE', 'SEASONAL', 'CHAMPIONSHIP']
 export default function NewTournamentPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  // Hosting requires an account so the creator becomes the tournament's owner.
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'ok'>('checking')
+
+  useEffect(() => {
+    let cancelled = false
+    createPlatformBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!cancelled) setAuthState(data.user ? 'ok' : 'guest')
+      })
+      .catch(() => {
+        // Fail closed: treat an auth-check error as signed-out (shows sign-in CTA).
+        if (!cancelled) setAuthState('guest')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -24,7 +43,7 @@ export default function NewTournamentPage() {
     if (!name) return
     setSaving(true)
     try {
-      const t = await createTournament({
+      const t = await createOwnedTournament({
         name,
         type: String(f.get('type') || 'TOURNAMENT'),
         description: str(f, 'description'),
@@ -49,6 +68,29 @@ export default function NewTournamentPage() {
       toast.error((err as Error).message)
       setSaving(false)
     }
+  }
+
+  if (authState === 'checking') {
+    return (
+      <PlatformShell>
+        <div className="px-4 py-16 text-center text-sm text-[#9a978d]">Loading…</div>
+      </PlatformShell>
+    )
+  }
+  if (authState === 'guest') {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="cy-display text-2xl font-semibold text-[#16150f]">Sign in to host</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">
+            Create an account so you become the tournament&apos;s owner and can manage teams, fixtures, and announcements.
+          </p>
+          <Button className="mt-5" onClick={() => router.push('/account/sign-in?redirect=/tournaments/new')}>
+            Sign in
+          </Button>
+        </div>
+      </PlatformShell>
+    )
   }
 
   return (

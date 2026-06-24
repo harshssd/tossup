@@ -58,3 +58,19 @@ export async function getPlatformUser(): Promise<PlatformUser | null> {
     primaryPersonId: profile?.primary_person_id ?? null,
   }
 }
+
+/** Server-side: does the current authenticated user administer this scope?
+ *  Resolves via the SECURITY DEFINER is_scope_admin() helper (owner_id or an
+ *  OWNER/ADMIN membership). Returns false when signed out. */
+export async function isServerScopeAdmin(
+  scope: 'club' | 'team' | 'league' | 'tournament_team',
+  scopeId: string
+): Promise<boolean> {
+  const supabase = await createPlatformServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data } = await supabase.rpc('is_scope_admin', { p_user: user.id, p_scope: scope, p_scope_id: scopeId })
+  return data === true
+}

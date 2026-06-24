@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { getTournamentAdminState } from '@/lib/platform/tournament-host'
 import {
   addTournamentTeam,
   createFixture,
@@ -25,12 +26,32 @@ const selCls = 'h-9 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm
 
 export default function ManageTournamentPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const [league, setLeague] = useState<League | null>(null)
   const [teams, setTeams] = useState<TournamentTeam[]>([])
   const [fixtures, setFixtures] = useState<Fixture[]>([])
   const [standings, setStandings] = useState<Standing[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
+  // Admin gate: only the tournament's owner/admins may manage it.
+  const [access, setAccess] = useState<'checking' | 'guest' | 'denied' | 'ok'>('checking')
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    getTournamentAdminState(id)
+      .then(({ signedIn, isAdmin }) => {
+        if (cancelled) return
+        setAccess(!signedIn ? 'guest' : isAdmin ? 'ok' : 'denied')
+      })
+      .catch(() => {
+        // Fail closed: a failed admin check must not unlock management.
+        if (!cancelled) setAccess('denied')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   const load = useCallback(async () => {
     if (!id) return
@@ -43,8 +64,8 @@ export default function ManageTournamentPage() {
   }, [id])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (access === 'ok') load()
+  }, [load, access])
 
   async function onAddTeam(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -94,6 +115,36 @@ export default function ManageTournamentPage() {
     }
   }
 
+  if (access === 'checking') return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Checking access…</div>
+  if (access === 'guest') {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="cy-display text-2xl font-semibold text-[#16150f]">Sign in to manage</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">Only the tournament&apos;s hosts can manage it.</p>
+          <Button
+            className="mt-5"
+            onClick={() => router.push(`/account/sign-in?redirect=/tournaments/${id}/manage`)}
+          >
+            Sign in
+          </Button>
+        </div>
+      </PlatformShell>
+    )
+  }
+  if (access === 'denied') {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="cy-display text-2xl font-semibold text-[#16150f]">Not a host</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">You don&apos;t have permission to manage this tournament.</p>
+          <Link href={`/tournaments/${id}`} className="mt-5 inline-block">
+            <Button variant="outline">View tournament</Button>
+          </Link>
+        </div>
+      </PlatformShell>
+    )
+  }
   if (loading) return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Loading…</div>
   if (!league) return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Not found.</div>
 
