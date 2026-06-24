@@ -9,13 +9,16 @@ import type { PlayerProfile } from './queries'
 // memberships land (Phase 2) + the RLS rewrite (Phase 4). Today the platform is
 // anon-permissive, so these run unguarded — consistent with the rest of the app.
 
-/** Link a Person to a User account. Won't link a tombstoned (merged-away) Person. */
+/** Link a Person to a User account. Only attaches an *unlinked*, live Person —
+ *  re-assigning a Person already owned by another user is a distinct transfer/
+ *  merge operation (Phase 3/5), not a silent overwrite here. */
 export async function linkPersonToUser(personId: string, userId: string): Promise<void> {
   const { error } = await platformDb
     .from('player_profiles')
     .update({ user_id: userId, updated_at: new Date().toISOString() })
     .eq('id', personId)
     .is('merged_into_id', null)
+    .is('user_id', null)
   if (error) throw new Error(error.message)
 }
 
