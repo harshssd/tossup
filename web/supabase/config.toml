@@ -56,11 +56,13 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# Disabled: the old seed.sql seeded the legacy auction project's reference
+# tables (now in legacy-auction-migrations/seed.sql). The platform project has
+# no seed data — re-enable only with a platform-specific seed file.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.
