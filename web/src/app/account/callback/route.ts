@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
   const redirectParam = url.searchParams.get('redirect') || '/discover'
-  // Only allow same-origin in-app redirects.
-  const redirect = redirectParam.startsWith('/') ? redirectParam : '/discover'
+  // Only allow same-origin in-app paths; reject protocol-relative (//evil) and
+  // backslash forms.
+  const redirect = /^\/(?![/\\])/.test(redirectParam) ? redirectParam : '/discover'
 
   if (code) {
     const supabase = await createPlatformServerClient()

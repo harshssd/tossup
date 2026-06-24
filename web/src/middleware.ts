@@ -187,9 +187,10 @@ export async function middleware(request: NextRequest) {
   // platform paths to avoid a second auth round-trip on every legacy request.
   const platformUrl = process.env.NEXT_PUBLIC_PLATFORM_SUPABASE_URL
   const platformKey = process.env.NEXT_PUBLIC_PLATFORM_SUPABASE_ANON_KEY
-  const isPlatformPath = ['/discover', '/club/', '/player/', '/tournament', '/account'].some(
-    (p) => pathname.startsWith(p)
-  )
+  // Refresh server-side only where SSR actually reads the platform session (the
+  // account area). Public platform pages rely on the client's own auto-refresh,
+  // so we avoid an extra auth round-trip on every discover/tournament request.
+  const isPlatformPath = pathname.startsWith('/account')
   if (platformUrl && platformKey && isPlatformPath) {
     try {
       const platform = createServerClient(platformUrl, platformKey, {
@@ -198,6 +199,9 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
+            // Mirror into request.cookies too so a refreshed token is visible to
+            // server components reading cookies within this same request.
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
             cookiesToSet.forEach(({ name, value, options }) =>
               supabaseResponse.cookies.set(name, value, options)
             )

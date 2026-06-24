@@ -14,7 +14,10 @@ const field = 'h-10 w-full rounded-lg border border-[#e7e4db] bg-white pl-9 pr-3
 export function AccountAuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const router = useRouter()
   const params = useSearchParams()
-  const redirect = params.get('redirect') || '/discover'
+  // Only allow same-origin in-app paths; reject protocol-relative (//evil) and
+  // backslash forms so a crafted ?redirect can't bounce an authed user off-site.
+  const raw = params.get('redirect')
+  const redirect = raw && /^\/(?![/\\])/.test(raw) ? raw : '/discover'
   const supabase = createPlatformBrowserClient()
 
   const [email, setEmail] = useState('')
