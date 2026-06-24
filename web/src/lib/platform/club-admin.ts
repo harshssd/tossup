@@ -108,3 +108,13 @@ export async function removeClubMember(membershipId: string): Promise<void> {
   const { error } = await supabase.from('club_memberships').delete().eq('id', membershipId)
   if (error) throw new Error(error.message)
 }
+
+/** Merge two roster members that are the same human: re-points the loser's
+ *  memberships/links onto the winner and tombstones the loser. Authority is
+ *  enforced inside merge_persons (caller must admin a scope both Persons share).
+ *  Destructive — confirm before calling. */
+export async function mergeMembers(loserPersonId: string, winnerPersonId: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.rpc('merge_persons', { p_loser: loserPersonId, p_winner: winnerPersonId })
+  if (error) throw new Error(error.message)
+}
