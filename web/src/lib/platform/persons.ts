@@ -31,6 +31,15 @@ export async function unlinkPerson(personId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/** Merge two Person records (same human). Re-points all references to the
+ *  winner, dedupes membership collisions, tombstones the loser; blocks if they
+ *  link to different users. Delegates to the SECURITY DEFINER merge_persons()
+ *  (advisory-locked, idempotent). Destructive — gate behind admin confirmation. */
+export async function mergePersons(loserId: string, winnerId: string): Promise<void> {
+  const { error } = await platformDb.rpc('merge_persons', { p_loser: loserId, p_winner: winnerId })
+  if (error) throw new Error(error.message)
+}
+
 /** Live Persons owned by a user — their self-Person plus any roster identities
  *  they manage. Excludes tombstoned (merged-away) Persons. */
 export async function getPersonsForUser(userId: string): Promise<PlayerProfile[]> {

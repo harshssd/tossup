@@ -208,6 +208,7 @@ export type Database = {
     Functions: {
       km_between: { Args: { lat1: number; lon1: number; lat2: number; lon2: number }; Returns: number }
       is_scope_admin: { Args: { p_user: string; p_scope: string; p_scope_id: string }; Returns: boolean }
+      merge_persons: { Args: { p_loser: string; p_winner: string }; Returns: undefined }
     }
     Enums: {
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"

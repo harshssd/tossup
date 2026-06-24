@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Mail, Phone, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -14,6 +14,8 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   const { id } = await params
   const player = await getPlayer(id)
   if (!player) notFound()
+  // A merged-away Person redirects to the canonical survivor.
+  if (player.merged_into_id) redirect(`/player/${player.merged_into_id}`)
 
   const place = [player.city, player.region, player.country].filter(Boolean).join(', ')
 
