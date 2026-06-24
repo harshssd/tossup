@@ -58,7 +58,7 @@ export type Database = {
         Row: {
           id: string; league_id: string; name: string; club_id: string | null
           captain_name: string | null; contact_email: string | null; contact_phone: string | null
-          logo: string | null; color: string | null; created_at: string
+          logo: string | null; color: string | null; club_team_id: string | null; created_at: string
         }
         Insert: Partial<Database["public"]["Tables"]["tournament_teams"]["Row"]> & { league_id: string; name: string }
         Update: Partial<Database["public"]["Tables"]["tournament_teams"]["Row"]>
@@ -106,16 +106,34 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["player_profiles"]["Row"]>
         Relationships: []
       }
+      teams: {
+        Row: { id: string; club_id: string; name: string; description: string | null; created_at: string; updated_at: string }
+        Insert: Partial<Database["public"]["Tables"]["teams"]["Row"]> & { club_id: string; name: string }
+        Update: Partial<Database["public"]["Tables"]["teams"]["Row"]>
+        Relationships: []
+      }
       club_memberships: {
-        Row: { id: string; club_id: string; user_id: string; role: Database["public"]["Enums"]["organization_role"]; joined_at: string }
-        Insert: Partial<Database["public"]["Tables"]["club_memberships"]["Row"]> & { club_id: string; user_id: string }
+        Row: { id: string; person_id: string; club_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
+        Insert: Partial<Database["public"]["Tables"]["club_memberships"]["Row"]> & { person_id: string; club_id: string }
         Update: Partial<Database["public"]["Tables"]["club_memberships"]["Row"]>
         Relationships: []
       }
+      team_memberships: {
+        Row: { id: string; person_id: string; team_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
+        Insert: Partial<Database["public"]["Tables"]["team_memberships"]["Row"]> & { person_id: string; team_id: string }
+        Update: Partial<Database["public"]["Tables"]["team_memberships"]["Row"]>
+        Relationships: []
+      }
       league_memberships: {
-        Row: { id: string; league_id: string; user_id: string; role: Database["public"]["Enums"]["organization_role"]; joined_at: string }
-        Insert: Partial<Database["public"]["Tables"]["league_memberships"]["Row"]> & { league_id: string; user_id: string }
+        Row: { id: string; person_id: string; league_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
+        Insert: Partial<Database["public"]["Tables"]["league_memberships"]["Row"]> & { person_id: string; league_id: string }
         Update: Partial<Database["public"]["Tables"]["league_memberships"]["Row"]>
+        Relationships: []
+      }
+      tournament_team_memberships: {
+        Row: { id: string; person_id: string; tournament_team_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
+        Insert: Partial<Database["public"]["Tables"]["tournament_team_memberships"]["Row"]> & { person_id: string; tournament_team_id: string }
+        Update: Partial<Database["public"]["Tables"]["tournament_team_memberships"]["Row"]>
         Relationships: []
       }
       external_sources: {
@@ -189,6 +207,7 @@ export type Database = {
     }
     Functions: {
       km_between: { Args: { lat1: number; lon1: number; lat2: number; lon2: number }; Returns: number }
+      is_scope_admin: { Args: { p_user: string; p_scope: string; p_scope_id: string }; Returns: boolean }
     }
     Enums: {
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"
