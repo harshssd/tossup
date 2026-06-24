@@ -137,28 +137,6 @@ export async function createPlayerProfile(input: Partial<PlayerProfile> & { disp
   return data
 }
 
-export async function createTournament(input: Partial<League> & { name: string }) {
-  const { data, error } = await platformDb.from('leagues').insert(input).select().single()
-  if (error) throw new Error(error.message)
-  return data
-}
-
-export async function addTournamentTeam(input: Partial<TournamentTeam> & { league_id: string; name: string }) {
-  const { data, error } = await platformDb.from('tournament_teams').insert(input).select().single()
-  if (error) throw new Error(error.message)
-  return data
-}
-
-export async function createFixture(input: Partial<Fixture> & { league_id: string }) {
-  const { data, error } = await platformDb.from('fixtures').insert(input).select().single()
-  if (error) throw new Error(error.message)
-  return data
-}
-
-export async function saveFixtureResult(id: string, patch: Partial<Fixture>) {
-  const { error } = await platformDb
-    .from('fixtures')
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
-}
+// Tournament create + host writes moved to lib/platform/tournament-host.ts —
+// after Phase 4 RLS these must run as the authenticated admin, so the anon
+// platformDb versions were removed to avoid a footgun that always fails RLS.
