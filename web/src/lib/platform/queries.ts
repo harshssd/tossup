@@ -121,16 +121,9 @@ export async function getTournament(id: string): Promise<{
 }
 
 // ---------------- Mutations (anon writes until auth lands) ----------------
-function slugify(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-}
-
-export async function createClub(input: Partial<Club> & { name: string }) {
-  const slug = `${slugify(input.name)}-${Math.random().toString(36).slice(2, 8)}`
-  const { data, error } = await platformDb.from('clubs').insert({ ...input, slug }).select().single()
-  if (error) throw new Error(error.message)
-  return data
-}
+// Club create moved to lib/platform/club-admin.ts (createOwnedClub) — after the
+// Phase 5 RLS, clubs INSERT must run as the authenticated owner, so the anon
+// platformDb version was removed to avoid a footgun that always fails RLS.
 
 export async function createPlayerProfile(input: Partial<PlayerProfile> & { display_name: string }) {
   const { data, error } = await platformDb.from('player_profiles').insert(input).select().single()
