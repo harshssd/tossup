@@ -98,7 +98,9 @@ export type Database = {
           contact_email: string | null; contact_phone: string | null; current_club_id: string | null
           visibility: Database["public"]["Enums"]["visibility"]
           recognition_tier: Database["public"]["Enums"]["recognition_tier"]
-          reputation_score: number; external_links: Json; created_at: string; updated_at: string
+          reputation_score: number; external_links: Json
+          merged_into_id: string | null
+          created_at: string; updated_at: string
         }
         Insert: Partial<Database["public"]["Tables"]["player_profiles"]["Row"]> & { display_name: string }
         Update: Partial<Database["public"]["Tables"]["player_profiles"]["Row"]>
