@@ -95,7 +95,11 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
         notes: str(f, 'notes'),
       })
       toast.success('Registration submitted')
-      setMine(await getMyRegistration(leagueId))
+      const reg = await getMyRegistration(leagueId)
+      // If the read-back is somehow empty, re-enable the form rather than
+      // leaving it stuck on "Submitting…".
+      if (reg) setMine(reg)
+      else setSaving(false)
     } catch (err) {
       toast.error((err as Error).message)
       setSaving(false)
