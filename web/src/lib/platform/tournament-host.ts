@@ -1,7 +1,7 @@
 'use client'
 
 import { createPlatformBrowserClient } from './auth-browser'
-import type { Fixture, League, TournamentTeam } from './queries'
+import type { Fixture, League, Standing, TournamentTeam } from './queries'
 
 // Tournament hosting with real ownership. These run as the *authenticated* user
 // (not the anon platformDb), so owner_id / memberships are set as the creator and
@@ -73,4 +73,23 @@ export async function hostSaveFixtureResult(id: string, patch: Partial<Fixture>)
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+/** Read a tournament as the authenticated admin. Mirrors queries.getTournament
+ *  but uses the authed client so the admin-read RLS admits non-public
+ *  tournaments too (the anon read path only sees PUBLIC ones). */
+export async function getHostTournament(id: string): Promise<{
+  league: League | null
+  teams: TournamentTeam[]
+  fixtures: Fixture[]
+  standings: Standing[]
+}> {
+  const supabase = createPlatformBrowserClient()
+  const [{ data: league }, { data: teams }, { data: fixtures }, { data: standings }] = await Promise.all([
+    supabase.from('leagues').select('*').eq('id', id).maybeSingle(),
+    supabase.from('tournament_teams').select('*').eq('league_id', id).order('name'),
+    supabase.from('fixtures').select('*').eq('league_id', id).order('match_number', { nullsFirst: true }),
+    supabase.from('tournament_standings').select('*').eq('league_id', id),
+  ])
+  return { league, teams: teams ?? [], fixtures: fixtures ?? [], standings: standings ?? [] }
 }

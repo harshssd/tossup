@@ -10,13 +10,13 @@ import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import {
+  getHostTournament,
   getTournamentAdminState,
   hostAddTeam,
   hostCreateFixture,
   hostSaveFixtureResult,
 } from '@/lib/platform/tournament-host'
 import {
-  getTournament,
   type Fixture,
   type League,
   type Standing,
@@ -57,7 +57,7 @@ export default function ManageTournamentPage() {
 
   const load = useCallback(async () => {
     if (!id) return
-    const t = await getTournament(id)
+    const t = await getHostTournament(id)
     setLeague(t.league)
     setTeams(t.teams)
     setFixtures(t.fixtures)
