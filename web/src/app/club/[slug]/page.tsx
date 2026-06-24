@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
 import { TIER_META, roleLabel, type Tier } from '@/lib/platform/recognition'
 import { getClubBySlug, countClubMembers } from '@/lib/platform/queries'
+import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { platformDb } from '@/lib/platform/db'
+import { Button } from '@/components/ui/button'
+import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 
 export const dynamic = 'force-dynamic'
@@ -21,6 +24,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
     platformDb.from('leagues').select('id,name,registration_status,start_date').eq('club_id', club.id).eq('visibility', 'PUBLIC').limit(20),
   ])
 
+  const canManage = await isServerScopeAdmin('club', club.id)
   const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
   const socials = (club.social_links ?? {}) as Record<string, string>
 
@@ -44,6 +48,13 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
           </div>
           <RecognitionBadge tier={club.recognition_tier as Tier} size="md" />
         </div>
+        {canManage && (
+          <Link href={`/club/${club.slug}/manage`} className="mt-5 inline-block">
+            <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+              <Settings className="h-4 w-4" /> Manage roster
+            </Button>
+          </Link>
+        )}
       </div>
 
       {club.description && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{club.description}</p>}

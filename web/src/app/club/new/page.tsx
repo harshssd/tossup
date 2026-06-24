@@ -1,14 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { createClub } from '@/lib/platform/queries'
+import { createOwnedClub } from '@/lib/platform/club-admin'
+import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import { COUNTRIES, PLAYING_ROLES, roleLabel } from '@/lib/platform/recognition'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 
@@ -17,6 +18,23 @@ export default function NewClubPage() {
   const [saving, setSaving] = useState(false)
   const [recruiting, setRecruiting] = useState(false)
   const [roles, setRoles] = useState<string[]>([])
+  // Registering a club requires an account so the creator becomes its owner.
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'ok'>('checking')
+
+  useEffect(() => {
+    let cancelled = false
+    createPlatformBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!cancelled) setAuthState(data.user ? 'ok' : 'guest')
+      })
+      .catch(() => {
+        if (!cancelled) setAuthState('guest')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -25,7 +43,7 @@ export default function NewClubPage() {
     if (!name) return
     setSaving(true)
     try {
-      const club = await createClub({
+      const club = await createOwnedClub({
         name,
         description: str(f, 'description'),
         country: str(f, 'country'),
@@ -43,6 +61,29 @@ export default function NewClubPage() {
       toast.error((err as Error).message)
       setSaving(false)
     }
+  }
+
+  if (authState === 'checking') {
+    return (
+      <PlatformShell>
+        <div className="px-4 py-16 text-center text-sm text-[#9a978d]">Loading…</div>
+      </PlatformShell>
+    )
+  }
+  if (authState === 'guest') {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="cy-display text-2xl font-semibold text-[#16150f]">Sign in to register a club</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">
+            Create an account so you become the club&apos;s owner and can manage its roster.
+          </p>
+          <Button className="mt-5" onClick={() => router.push('/account/sign-in?redirect=/club/new')}>
+            Sign in
+          </Button>
+        </div>
+      </PlatformShell>
+    )
   }
 
   return (
