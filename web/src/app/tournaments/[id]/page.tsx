@@ -9,6 +9,7 @@ import { MatchCard } from '@/components/platform/MatchCard'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { type Tier } from '@/lib/platform/recognition'
 import { getTournament } from '@/lib/platform/queries'
+import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 
 export const dynamic = 'force-dynamic'
@@ -18,6 +19,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   const { league, teams, fixtures, standings } = await getTournament(id)
   if (!league) notFound()
 
+  const canManage = await isServerScopeAdmin('league', id)
   const place = [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue
 
   return (
@@ -52,11 +54,13 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           <RecognitionBadge tier={league.recognition_tier as Tier} size="md" />
         </div>
         {league.description && <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#3a382f]">{league.description}</p>}
-        <Link href={`/tournaments/${league.id}/manage`} className="mt-5 inline-block">
-          <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
-            <Settings className="h-4 w-4" /> Manage tournament
-          </Button>
-        </Link>
+        {canManage && (
+          <Link href={`/tournaments/${league.id}/manage`} className="mt-5 inline-block">
+            <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+              <Settings className="h-4 w-4" /> Manage tournament
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="mt-8">
