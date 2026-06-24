@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
-import { getTournamentAdminState } from '@/lib/platform/tournament-host'
 import {
-  addTournamentTeam,
-  createFixture,
+  getTournamentAdminState,
+  hostAddTeam,
+  hostCreateFixture,
+  hostSaveFixtureResult,
+} from '@/lib/platform/tournament-host'
+import {
   getTournament,
-  saveFixtureResult,
   type Fixture,
   type League,
   type Standing,
@@ -73,7 +75,7 @@ export default function ManageTournamentPage() {
     const name = String(f.get('name') || '').trim()
     if (!name) return
     try {
-      await addTournamentTeam({
+      await hostAddTeam({
         league_id: id,
         name,
         captain_name: String(f.get('captain') || '').trim() || null,
@@ -97,7 +99,7 @@ export default function ManageTournamentPage() {
       return
     }
     try {
-      await createFixture({
+      await hostCreateFixture({
         league_id: id,
         team_a_id: aId,
         team_b_id: bId,
@@ -272,7 +274,7 @@ function ResultForm({ fixture, onSaved }: { fixture: Fixture; onSaved: () => voi
       note = 'Abandoned'
     }
     try {
-      await saveFixtureResult(fixture.id, {
+      await hostSaveFixtureResult(fixture.id, {
         team_a_runs: aR, team_a_wickets: aW, team_a_overs: aO,
         team_b_runs: bR, team_b_wickets: bW, team_b_overs: bO,
         result_type: resultType,
