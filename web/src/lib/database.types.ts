@@ -135,7 +135,7 @@ export type Database = {
         Relationships: []
       }
       users: {
-        Row: { id: string; email: string | null; name: string | null; image: string | null; phone: string | null; bio: string | null; created_at: string; updated_at: string }
+        Row: { id: string; email: string | null; name: string | null; image: string | null; phone: string | null; bio: string | null; primary_person_id: string | null; created_at: string; updated_at: string }
         Insert: Partial<Database["public"]["Tables"]["users"]["Row"]> & { id: string }
         Update: Partial<Database["public"]["Tables"]["users"]["Row"]>
         Relationships: []
