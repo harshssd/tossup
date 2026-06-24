@@ -61,7 +61,8 @@ export interface PlayerFilters {
 }
 
 export async function listPlayers(f: PlayerFilters = {}): Promise<PlayerProfile[]> {
-  let query = platformDb.from('player_profiles').select('*').eq('visibility', 'PUBLIC')
+  // Exclude tombstoned (merged-away) Persons from discovery.
+  let query = platformDb.from('player_profiles').select('*').eq('visibility', 'PUBLIC').is('merged_into_id', null)
   if (f.q) query = query.or(ilikeOr(['display_name', 'city', 'region', 'bio'], f.q))
   if (f.country) query = query.eq('country', f.country)
   if (f.region) query = query.ilike('region', `%${f.region}%`)
