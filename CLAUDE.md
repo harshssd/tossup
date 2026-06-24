@@ -36,7 +36,20 @@ Run these from the `web/` directory.
 - Always check user authorization in API routes via `getAuthenticatedUser(request)`
 
 ### Database Changes
-- All schema changes must go through Supabase migrations (`supabase/migrations/`)
+- All schema changes must go through Supabase migrations (`web/supabase/migrations/`)
 - Migration naming: `YYYYMMDDHHMMSS_description.sql`
 - Never modify existing migration files - create new ones
 - Consider RLS policies for any new table
+
+#### Two Supabase projects — migrations are split
+- `web/supabase/migrations/` is **platform-only** (`tossup` / `byuvtmfarlreoxilrzcx` =
+  tossup-cricket): identity, discovery, pavilion, tournaments. This is the active
+  CLI target (`config.toml` project_id = `tossup`). New migrations go here.
+- `web/supabase/legacy-auction-migrations/` holds the **legacy auction project's**
+  migrations (`offnmpuiogbuxbmhgdck`, used by `@/lib/supabase`). Archived, NOT
+  CLI-managed — see its README. Never move them back into `supabase/migrations/`
+  (they collide by name with platform tables and a `db reset` would corrupt the
+  platform schema).
+- Tables named `clubs` / `leagues` / `teams` / `tournament_registrations` /
+  `fixtures` exist in BOTH projects with different shapes — they are different
+  tables in different databases.
