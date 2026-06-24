@@ -6,8 +6,11 @@ import type { Club } from './queries'
 // Club ownership + roster admin. Runs as the authenticated user so the Phase 5
 // is_scope_admin RLS admits these writes; RLS (not these helpers) is the gate.
 
-function slugify(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+// clubs.slug is UNIQUE — append a short random suffix so duplicate club names
+// don't collide (matches the prior createClub behavior).
+function uniqueSlug(name: string) {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return `${base}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 /** Create a club owned by the current user: sets clubs.owner_id and adds an OWNER
@@ -19,7 +22,7 @@ export async function createOwnedClub(input: Partial<Club> & { name: string }): 
   } = await supabase.auth.getUser()
   if (!user) throw new Error('You must be signed in to register a club')
 
-  const slug = slugify(input.name)
+  const slug = uniqueSlug(input.name)
   const { data: club, error } = await supabase
     .from('clubs')
     .insert({ ...input, slug, owner_id: user.id })

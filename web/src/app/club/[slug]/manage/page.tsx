@@ -19,7 +19,13 @@ import {
 } from '@/lib/platform/club-admin'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
-const ROLES: ClubRole[] = ['OWNER', 'ADMIN', 'MODERATOR', 'MEMBER']
+// Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
+// trigger, so only MEMBER/MODERATOR are offered as targets. The member's current
+// role is always included so it renders correctly (incl. OWNER/ADMIN rows).
+const ASSIGNABLE: ClubRole[] = ['MODERATOR', 'MEMBER']
+function roleOptions(current: string): string[] {
+  return Array.from(new Set<string>([current, ...ASSIGNABLE]))
+}
 
 export default function ManageClubPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -161,12 +167,19 @@ export default function ManageClubPage() {
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="text-sm font-semibold text-[#16150f]">{m.name}</span>
                 <div className="flex items-center gap-2">
-                  <select className={selCls} value={m.role} onChange={(e) => onRole(m.id, e.target.value as ClubRole)}>
-                    {ROLES.map((r) => (
+                  <select
+                    aria-label={`Role for ${m.name}`}
+                    className={selCls}
+                    value={m.role}
+                    onChange={(e) => onRole(m.id, e.target.value as ClubRole)}
+                  >
+                    {roleOptions(m.role).map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
-                  <Button size="sm" variant="outline" onClick={() => onRemove(m.id)}>Remove</Button>
+                  <Button size="sm" variant="outline" aria-label={`Remove ${m.name}`} onClick={() => onRemove(m.id)}>
+                    Remove
+                  </Button>
                 </div>
               </div>
             ))}
