@@ -10,15 +10,19 @@ import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import {
+  approveRegistration,
   getHostTournament,
+  getRegistrations,
   getTournamentAdminState,
   hostAddTeam,
   hostCreateFixture,
   hostSaveFixtureResult,
+  rejectRegistration,
 } from '@/lib/platform/tournament-host'
 import {
   type Fixture,
   type League,
+  type Registration,
   type Standing,
   type TournamentTeam,
 } from '@/lib/platform/queries'
@@ -33,6 +37,7 @@ export default function ManageTournamentPage() {
   const [teams, setTeams] = useState<TournamentTeam[]>([])
   const [fixtures, setFixtures] = useState<Fixture[]>([])
   const [standings, setStandings] = useState<Standing[]>([])
+  const [registrations, setRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
   // Admin gate: only the tournament's owner/admins may manage it.
@@ -57,13 +62,34 @@ export default function ManageTournamentPage() {
 
   const load = useCallback(async () => {
     if (!id) return
-    const t = await getHostTournament(id)
+    const [t, regs] = await Promise.all([getHostTournament(id), getRegistrations(id).catch(() => [])])
     setLeague(t.league)
     setTeams(t.teams)
     setFixtures(t.fixtures)
     setStandings(t.standings)
+    setRegistrations(regs)
     setLoading(false)
   }, [id])
+
+  async function onApprove(regId: string) {
+    try {
+      await approveRegistration(regId)
+      toast.success('Registration approved')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onReject(regId: string) {
+    try {
+      await rejectRegistration(regId)
+      toast.success('Registration rejected')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
 
   useEffect(() => {
     if (access === 'ok') load()
@@ -162,6 +188,49 @@ export default function ManageTournamentPage() {
       <section className="mt-6">
         <Pavilion key={id} leagueId={id} mode="host" />
       </section>
+
+      {/* Registrations */}
+      {(() => {
+        const pending = registrations.filter((r) => r.status === 'PENDING')
+        if (registrations.length === 0) return null
+        return (
+          <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+            <h2 className="cy-display text-xl font-semibold text-[#16150f]">
+              Registrations <span className="text-[#9a978d]">({pending.length} pending)</span>
+            </h2>
+            <div className="mt-3 space-y-2">
+              {registrations.map((r) => (
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#16150f]">{r.team_name}</p>
+                    <p className="text-xs text-[#9a978d]">
+                      {[r.contact_name, r.contact_phone, r.contact_email].filter(Boolean).join(' · ') || 'No contact info'}
+                    </p>
+                  </div>
+                  {r.status === 'PENDING' ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]" onClick={() => onApprove(r.id)}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => onReject(r.id)}>
+                        Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
+                        r.status === 'APPROVED' ? 'bg-[#dff3e4] text-[#0f5a30]' : 'bg-[#f7dcdc] text-[#8a2a2a]'
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      })()}
 
       {/* Teams */}
       <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">

@@ -8,6 +8,7 @@ export type TournamentTeam = Database['public']['Tables']['tournament_teams']['R
 export type Fixture = Database['public']['Tables']['fixtures']['Row']
 export type PlayerProfile = Database['public']['Tables']['player_profiles']['Row']
 export type Standing = Database['public']['Views']['tournament_standings']['Row']
+export type Registration = Database['public']['Tables']['tournament_registrations']['Row']
 
 function ilikeOr(cols: string[], q: string) {
   const safe = q.replace(/[%,()]/g, ' ').trim()

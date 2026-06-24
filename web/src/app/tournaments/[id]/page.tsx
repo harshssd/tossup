@@ -7,6 +7,7 @@ import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { MatchCard } from '@/components/platform/MatchCard'
 import { Pavilion } from '@/components/platform/Pavilion'
+import { RegistrationPanel } from '@/components/tournament/RegistrationPanel'
 import { type Tier } from '@/lib/platform/recognition'
 import { getTournament } from '@/lib/platform/queries'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
@@ -67,6 +68,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
         {/* key on the tournament id so a soft-nav to another board remounts
             the Pavilion fresh (resets per-board "seen" state). */}
         <Pavilion key={league.id} leagueId={league.id} mode="public" />
+      </div>
+
+      <div className="mt-8">
+        <RegistrationPanel leagueId={league.id} registrationStatus={league.registration_status} />
       </div>
 
       <h2 className="cy-display mt-10 text-2xl font-semibold text-[#16150f]">Standings</h2>

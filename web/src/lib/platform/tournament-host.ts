@@ -1,7 +1,7 @@
 'use client'
 
 import { createPlatformBrowserClient } from './auth-browser'
-import type { Fixture, League, Standing, TournamentTeam } from './queries'
+import type { Fixture, League, Registration, Standing, TournamentTeam } from './queries'
 
 // Tournament hosting with real ownership. These run as the *authenticated* user
 // (not the anon platformDb), so owner_id / memberships are set as the creator and
@@ -92,4 +92,75 @@ export async function getHostTournament(id: string): Promise<{
     supabase.from('tournament_standings').select('*').eq('league_id', id),
   ])
   return { league, teams: teams ?? [], fixtures: fixtures ?? [], standings: standings ?? [] }
+}
+
+// ---- Team registration ----
+
+export interface RegisterTeamInput {
+  league_id: string
+  team_name: string
+  contact_name?: string | null
+  contact_email?: string | null
+  contact_phone?: string | null
+  notes?: string | null
+  club_id?: string | null
+}
+
+/** Submit a team registration (PENDING) for the current user. Requires sign-in;
+ *  RLS enforces user_id = self and status = PENDING. */
+export async function registerTeam(input: RegisterTeamInput): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('You must be signed in to register a team')
+  const { error } = await supabase
+    .from('tournament_registrations')
+    .insert({ ...input, user_id: user.id, status: 'PENDING' })
+  if (error) throw new Error(error.message)
+}
+
+/** The current user's registration for a tournament, if any (RLS: own row). */
+export async function getMyRegistration(leagueId: string): Promise<Registration | null> {
+  const supabase = createPlatformBrowserClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('tournament_registrations')
+    .select('*')
+    .eq('league_id', leagueId)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data ?? null
+}
+
+/** All registrations for a tournament (RLS: admins see all). */
+export async function getRegistrations(leagueId: string): Promise<Registration[]> {
+  const supabase = createPlatformBrowserClient()
+  const { data, error } = await supabase
+    .from('tournament_registrations')
+    .select('*')
+    .eq('league_id', leagueId)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/** Approve a registration: atomically creates the team + marks APPROVED.
+ *  Authority is enforced inside the SECURITY DEFINER function. */
+export async function approveRegistration(regId: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.rpc('approve_tournament_registration', { p_reg_id: regId })
+  if (error) throw new Error(error.message)
+}
+
+/** Reject a registration (admin-only via RLS). */
+export async function rejectRegistration(regId: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('tournament_registrations').update({ status: 'REJECTED' }).eq('id', regId)
+  if (error) throw new Error(error.message)
 }
