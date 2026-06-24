@@ -34,7 +34,10 @@ export async function unlinkPerson(personId: string): Promise<void> {
 /** Merge two Person records (same human). Re-points all references to the
  *  winner, dedupes membership collisions, tombstones the loser; blocks if they
  *  link to different users. Delegates to the SECURITY DEFINER merge_persons()
- *  (advisory-locked, idempotent). Destructive — gate behind admin confirmation. */
+ *  (advisory-locked, idempotent). Destructive — gate behind admin confirmation.
+ *  NOTE: merge_persons is REVOKEd from anon/authenticated (service_role only)
+ *  until Phase 5 adds an in-function caller-authority check; call this from a
+ *  trusted server route with the service-role client, not the anon platformDb. */
 export async function mergePersons(loserId: string, winnerId: string): Promise<void> {
   const { error } = await platformDb.rpc('merge_persons', { p_loser: loserId, p_winner: winnerId })
   if (error) throw new Error(error.message)
