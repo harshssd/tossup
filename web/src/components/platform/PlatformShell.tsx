@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Compass, Plus } from 'lucide-react'
 import { CricketBall } from './CricketBall'
+import { PlatformAuthNav } from './PlatformAuthNav'
 
 // Clubhouse light theme chrome for every platform page. The `clubhouse` class
 // scopes a light token set so this subtree renders light while legacy pages
@@ -32,6 +33,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             >
               <Plus className="h-4 w-4" /> Host
             </Link>
+            <PlatformAuthNav />
           </nav>
         </div>
       </header>

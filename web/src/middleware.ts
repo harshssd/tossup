@@ -68,6 +68,7 @@ function isPublicRoute(pathname: string): boolean {
     '/discover',
     '/club/',
     '/player/',
+    '/account',
     '/api/health',
     '/api/auth',
   ]
@@ -179,6 +180,34 @@ export async function middleware(request: NextRequest) {
       path: pathname,
       ip: request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
     })
+  }
+
+  // Refresh the platform (tossup-cricket) session on platform routes so SSR
+  // reads stay valid. Separate project => separate cookie name; scoped to
+  // platform paths to avoid a second auth round-trip on every legacy request.
+  const platformUrl = process.env.NEXT_PUBLIC_PLATFORM_SUPABASE_URL
+  const platformKey = process.env.NEXT_PUBLIC_PLATFORM_SUPABASE_ANON_KEY
+  const isPlatformPath = ['/discover', '/club/', '/player/', '/tournament', '/account'].some(
+    (p) => pathname.startsWith(p)
+  )
+  if (platformUrl && platformKey && isPlatformPath) {
+    try {
+      const platform = createServerClient(platformUrl, platformKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
+        },
+      })
+      await platform.auth.getUser()
+    } catch (error) {
+      logger.error('Platform supabase middleware error', error as Error, { path: pathname })
+    }
   }
 
   // Add security headers
