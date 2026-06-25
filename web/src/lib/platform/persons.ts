@@ -1,13 +1,9 @@
-import { platformDb } from './db'
+import { createPlatformServerClient } from './auth-server'
 import type { PlayerProfile } from './queries'
 
-// Person operations. A Person (player_profiles row) is a roster identity that
-// may or may not be linked to a User account. Link is M:1 — a user owns many
-// Persons; each Person has <= 1 user (player_profiles.user_id).
-//
-// NOTE: admin-of-scope authority for these mutations is enforced by RLS once
-// memberships land (Phase 2) + the RLS rewrite (Phase 4). Today the platform is
-// anon-permissive, so these run unguarded — consistent with the rest of the app.
+// Person operations (server-only). A Person (player_profiles row) is a roster
+// identity that may or may not be linked to a User account. Link is M:1 — a user
+// owns many Persons; each Person has <= 1 user (player_profiles.user_id).
 
 // Person<->User link/unlink removed: they ran unguarded on the anon platformDb
 // (a footgun) and were unused. player_profiles writes are now RLS-gated to the
@@ -22,9 +18,12 @@ import type { PlayerProfile } from './queries'
 // platformDb, which is REVOKEd and would always fail).
 
 /** Live Persons owned by a user — their self-Person plus any roster identities
- *  they manage. Excludes tombstoned (merged-away) Persons. */
+ *  they manage. Excludes tombstoned (merged-away) Persons. Reads via the authed
+ *  server client so the pp_owner_read RLS applies and the user sees their own
+ *  non-PUBLIC Persons too. Server-only (uses request cookies). */
 export async function getPersonsForUser(userId: string): Promise<PlayerProfile[]> {
-  const { data, error } = await platformDb
+  const supabase = await createPlatformServerClient()
+  const { data, error } = await supabase
     .from('player_profiles')
     .select('*')
     .eq('user_id', userId)
