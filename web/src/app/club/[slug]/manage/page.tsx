@@ -12,6 +12,7 @@ import {
   addClubMember,
   getClubAdminState,
   getClubRoster,
+  mergeMembers,
   removeClubMember,
   setClubMemberRole,
   type ClubRole,
@@ -114,6 +115,34 @@ export default function ManageClubPage() {
     }
   }
 
+  const [loserId, setLoserId] = useState('')
+  const [winnerId, setWinnerId] = useState('')
+  const [merging, setMerging] = useState(false)
+
+  async function onMerge() {
+    if (!loserId || !winnerId || loserId === winnerId) {
+      toast.error('Pick two different members')
+      return
+    }
+    const loser = roster.find((m) => m.personId === loserId)
+    const winner = roster.find((m) => m.personId === winnerId)
+    if (!confirm(`Merge "${loser?.name}" into "${winner?.name}"? This removes "${loser?.name}" and moves everything to "${winner?.name}". This cannot be undone.`)) {
+      return
+    }
+    setMerging(true)
+    try {
+      await mergeMembers(loserId, winnerId)
+      toast.success('Members merged')
+      setLoserId('')
+      setWinnerId('')
+      await loadRoster()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setMerging(false)
+    }
+  }
+
   if (access === 'checking') return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Checking access…</div>
   if (access === 'missing') {
     return (
@@ -199,6 +228,33 @@ export default function ManageClubPage() {
             Admins must be linked to a user account — promote to Admin/Owner after linking (coming soon).
           </p>
         </section>
+
+        {roster.length >= 2 && (
+          <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+            <h2 className="cy-display text-xl font-semibold text-[#16150f]">Merge duplicates</h2>
+            <p className="mt-1 text-sm text-[#6f6c63]">
+              Same player added twice? Merge them — everything moves to the one you keep.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <select className={`${selCls} h-9`} value={loserId} onChange={(e) => setLoserId(e.target.value)} aria-label="Duplicate to remove">
+                <option value="">Remove…</option>
+                {roster.map((m) => (
+                  <option key={m.personId} value={m.personId}>{m.name} ({m.role})</option>
+                ))}
+              </select>
+              <span className="text-xs text-[#9a978d]">into</span>
+              <select className={`${selCls} h-9`} value={winnerId} onChange={(e) => setWinnerId(e.target.value)} aria-label="Member to keep">
+                <option value="">Keep…</option>
+                {roster.map((m) => (
+                  <option key={m.personId} value={m.personId}>{m.name} ({m.role})</option>
+                ))}
+              </select>
+              <Button size="sm" variant="outline" disabled={merging} onClick={onMerge}>
+                {merging ? 'Merging…' : 'Merge'}
+              </Button>
+            </div>
+          </section>
+        )}
       </div>
     </PlatformShell>
   )
