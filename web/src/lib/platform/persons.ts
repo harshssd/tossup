@@ -9,27 +9,12 @@ import type { PlayerProfile } from './queries'
 // memberships land (Phase 2) + the RLS rewrite (Phase 4). Today the platform is
 // anon-permissive, so these run unguarded — consistent with the rest of the app.
 
-/** Link a Person to a User account. Only attaches an *unlinked*, live Person —
- *  re-assigning a Person already owned by another user is a distinct transfer/
- *  merge operation (Phase 3/5), not a silent overwrite here. */
-export async function linkPersonToUser(personId: string, userId: string): Promise<void> {
-  const { error } = await platformDb
-    .from('player_profiles')
-    .update({ user_id: userId, updated_at: new Date().toISOString() })
-    .eq('id', personId)
-    .is('merged_into_id', null)
-    .is('user_id', null)
-  if (error) throw new Error(error.message)
-}
-
-/** Unlink a Person from its User account (clears the M:1 link). */
-export async function unlinkPerson(personId: string): Promise<void> {
-  const { error } = await platformDb
-    .from('player_profiles')
-    .update({ user_id: null, updated_at: new Date().toISOString() })
-    .eq('id', personId)
-  if (error) throw new Error(error.message)
-}
+// Person<->User link/unlink removed: they ran unguarded on the anon platformDb
+// (a footgun) and were unused. player_profiles writes are now RLS-gated to the
+// owner; "link a player to a user" is realized by merging an account-less roster
+// Person into the user's account-Person (admin-gated merge_persons). A dedicated
+// admin link op, if needed, should be a SECURITY DEFINER function with an
+// is_scope_admin authority check — not an anon client write.
 
 // Person merge lives in lib/platform/club-admin.ts (mergeMembers) — Phase 5b
 // added an in-function caller-authority check to merge_persons and re-granted it

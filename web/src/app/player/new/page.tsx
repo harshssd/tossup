@@ -1,14 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { createPlayerProfile } from '@/lib/platform/queries'
+import { createOwnedPlayerProfile } from '@/lib/platform/persons-client'
+import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import { COUNTRIES, PLAYING_ROLES, roleLabel } from '@/lib/platform/recognition'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 
@@ -16,6 +17,23 @@ export default function NewPlayerPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [looking, setLooking] = useState(true)
+  // Listing a player profile requires an account so the creator owns it.
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'ok'>('checking')
+
+  useEffect(() => {
+    let cancelled = false
+    createPlatformBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!cancelled) setAuthState(data.user ? 'ok' : 'guest')
+      })
+      .catch(() => {
+        if (!cancelled) setAuthState('guest')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -24,7 +42,7 @@ export default function NewPlayerPage() {
     if (!display_name) return
     setSaving(true)
     try {
-      const p = await createPlayerProfile({
+      const p = await createOwnedPlayerProfile({
         display_name,
         primary_role: str(f, 'primary_role'),
         batting_style: str(f, 'batting_style'),
@@ -44,6 +62,29 @@ export default function NewPlayerPage() {
       toast.error((err as Error).message)
       setSaving(false)
     }
+  }
+
+  if (authState === 'checking') {
+    return (
+      <PlatformShell>
+        <div className="px-4 py-16 text-center text-sm text-[#9a978d]">Loading…</div>
+      </PlatformShell>
+    )
+  }
+  if (authState === 'guest') {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="cy-display text-2xl font-semibold text-[#16150f]">Sign in to list a profile</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">
+            Create an account so your player profile is yours to edit and manage.
+          </p>
+          <Button className="mt-5" onClick={() => router.push('/account/sign-in?redirect=/player/new')}>
+            Sign in
+          </Button>
+        </div>
+      </PlatformShell>
+    )
   }
 
   return (

@@ -125,11 +125,9 @@ export async function getTournament(id: string): Promise<{
 // Phase 5 RLS, clubs INSERT must run as the authenticated owner, so the anon
 // platformDb version was removed to avoid a footgun that always fails RLS.
 
-export async function createPlayerProfile(input: Partial<PlayerProfile> & { display_name: string }) {
-  const { data, error } = await platformDb.from('player_profiles').insert(input).select().single()
-  if (error) throw new Error(error.message)
-  return data
-}
+// Player profile create moved to lib/platform/persons-client.ts
+// (createOwnedPlayerProfile) — player_profiles INSERT is now RLS-gated to an
+// authenticated caller creating their own Person, so the anon version was removed.
 
 // Tournament create + host writes moved to lib/platform/tournament-host.ts —
 // after Phase 4 RLS these must run as the authenticated admin, so the anon
