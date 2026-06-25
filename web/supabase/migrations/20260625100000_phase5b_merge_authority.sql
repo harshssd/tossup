@@ -44,7 +44,10 @@ BEGIN
   -- winner is unlinked, which would otherwise make NOT(...) NULL and skip the
   -- RAISE (three-valued-logic hole) — wrap so a non-match always denies.
   IF auth.uid() IS NOT NULL AND NOT COALESCE((
-       (w_user = auth.uid() AND (l_user = auth.uid() OR l_user IS NULL))
+       -- self-service: caller owns BOTH Persons. (Absorbing an account-less
+       -- roster Person is an ADMIN action — the shared-scope branches below —
+       -- not self-service, to prevent unverified identity appropriation.)
+       (w_user = auth.uid() AND l_user = auth.uid())
     OR EXISTS (SELECT 1 FROM club_memberships a JOIN club_memberships b ON a.club_id = b.club_id
                WHERE a.person_id = p_loser AND b.person_id = p_winner
                  AND is_scope_admin(auth.uid(), 'club', a.club_id))
