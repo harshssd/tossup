@@ -12,6 +12,7 @@ import {
   addClubMember,
   getClubAdminState,
   getClubRoster,
+  linkMemberToUser,
   mergeMembers,
   removeClubMember,
   setClubMemberRole,
@@ -23,9 +24,11 @@ const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs
 // Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
 // trigger, so only MEMBER/MODERATOR are offered as targets. The member's current
 // role is always included so it renders correctly (incl. OWNER/ADMIN rows).
-const ASSIGNABLE: ClubRole[] = ['MODERATOR', 'MEMBER']
-function roleOptions(current: string): string[] {
-  return Array.from(new Set<string>([current, ...ASSIGNABLE]))
+// Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
+// trigger, so ADMIN is only offered once the member is linked to a user account.
+function roleOptions(current: string, linked: boolean): string[] {
+  const assignable = linked ? ['ADMIN', 'MODERATOR', 'MEMBER'] : ['MODERATOR', 'MEMBER']
+  return Array.from(new Set<string>([current, ...assignable]))
 }
 
 export default function ManageClubPage() {
@@ -115,6 +118,18 @@ export default function ManageClubPage() {
     }
   }
 
+  async function onLink(m: RosterMember) {
+    const email = window.prompt(`Link "${m.name}" to which account? Enter the member's account email:`)?.trim()
+    if (!email) return
+    try {
+      await linkMemberToUser(m.personId, email)
+      toast.success(`Linked ${m.name} to ${email}`)
+      await loadRoster()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
   const [loserId, setLoserId] = useState('')
   const [winnerId, setWinnerId] = useState('')
   const [merging, setMerging] = useState(false)
@@ -194,7 +209,14 @@ export default function ManageClubPage() {
             {roster.length === 0 && <p className="py-2 text-sm text-[#9a978d]">No members yet — add some below.</p>}
             {roster.map((m) => (
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="text-sm font-semibold text-[#16150f]">{m.name}</span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-[#16150f]">
+                  {m.name}
+                  {m.linked && (
+                    <span className="rounded-full bg-[#dff3e4] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0f5a30]">
+                      Linked
+                    </span>
+                  )}
+                </span>
                 <div className="flex items-center gap-2">
                   <select
                     aria-label={`Role for ${m.name}`}
@@ -202,10 +224,15 @@ export default function ManageClubPage() {
                     value={m.role}
                     onChange={(e) => onRole(m.id, e.target.value as ClubRole)}
                   >
-                    {roleOptions(m.role).map((r) => (
+                    {roleOptions(m.role, m.linked).map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
+                  {!m.linked && (
+                    <Button size="sm" variant="outline" aria-label={`Link ${m.name} to an account`} onClick={() => onLink(m)}>
+                      Link
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" aria-label={`Remove ${m.name}`} onClick={() => onRemove(m.id)}>
                     Remove
                   </Button>
@@ -225,7 +252,7 @@ export default function ManageClubPage() {
             </Button>
           </form>
           <p className="mt-2 text-xs text-[#9a978d]">
-            Admins must be linked to a user account — promote to Admin/Owner after linking (coming soon).
+            Use Link to connect a member to their account — once linked, you can promote them to Admin.
           </p>
         </section>
 
