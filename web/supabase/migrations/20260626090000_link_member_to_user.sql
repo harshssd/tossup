@@ -10,7 +10,7 @@
 -- transfer/merge, not this op.
 CREATE OR REPLACE FUNCTION public.link_member_to_user(p_person_id uuid, p_email text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE v_user uuid;
+DECLARE v_user uuid; v_n int;
 BEGIN
   -- Person must exist, be live, and be account-less.
   IF NOT EXISTS (SELECT 1 FROM player_profiles
@@ -33,11 +33,15 @@ BEGIN
     RAISE EXCEPTION 'not authorized to link this person';
   END IF;
 
-  -- Resolve the target account by email.
-  SELECT id INTO v_user FROM users WHERE lower(email) = lower(btrim(p_email));
-  IF v_user IS NULL THEN
+  -- Resolve the target account by email. users.email isn't unique-constrained,
+  -- so refuse an ambiguous match rather than linking to an arbitrary account.
+  SELECT count(*) INTO v_n FROM users WHERE lower(email) = lower(btrim(p_email));
+  IF v_n = 0 THEN
     RAISE EXCEPTION 'no account found for that email';
+  ELSIF v_n > 1 THEN
+    RAISE EXCEPTION 'multiple accounts share that email — resolve manually';
   END IF;
+  SELECT id INTO v_user FROM users WHERE lower(email) = lower(btrim(p_email));
 
   UPDATE player_profiles SET user_id = v_user, updated_at = now() WHERE id = p_person_id;
 END $$;
