@@ -210,6 +210,7 @@ export type Database = {
       is_scope_admin: { Args: { p_user: string; p_scope: string; p_scope_id: string }; Returns: boolean }
       approve_tournament_registration: { Args: { p_reg_id: string }; Returns: string }
       add_club_member: { Args: { p_club_id: string; p_display_name: string; p_role?: string }; Returns: string }
+      link_member_to_user: { Args: { p_person_id: string; p_email: string }; Returns: undefined }
       merge_persons: { Args: { p_loser: string; p_winner: string }; Returns: undefined }
     }
     Enums: {

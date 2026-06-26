@@ -58,11 +58,14 @@ export interface RosterMember {
   role: string
   personId: string
   name: string
+  /** Whether this member's Person is linked to a user account. */
+  linked: boolean
 }
 
 const ROLE_ORDER: Record<string, number> = { OWNER: 0, ADMIN: 1, MODERATOR: 2, MEMBER: 3 }
 
-/** Club roster: each membership with its Person's display name, strongest role first. */
+/** Club roster: each membership with its Person's display name + linked status,
+ *  strongest role first. */
 export async function getClubRoster(clubId: string): Promise<RosterMember[]> {
   const supabase = createPlatformBrowserClient()
   const { data: mems, error } = await supabase
@@ -72,12 +75,22 @@ export async function getClubRoster(clubId: string): Promise<RosterMember[]> {
   if (error) throw new Error(error.message)
   const ids = (mems ?? []).map((m) => m.person_id)
   const names = new Map<string, string>()
+  const linked = new Set<string>()
   if (ids.length) {
-    const { data: people } = await supabase.from('player_profiles').select('id, display_name').in('id', ids)
-    for (const p of people ?? []) names.set(p.id, p.display_name)
+    const { data: people } = await supabase.from('player_profiles').select('id, display_name, user_id').in('id', ids)
+    for (const p of people ?? []) {
+      names.set(p.id, p.display_name)
+      if (p.user_id) linked.add(p.id)
+    }
   }
   return (mems ?? [])
-    .map((m) => ({ id: m.id, role: m.role, personId: m.person_id, name: names.get(m.person_id) ?? 'Unknown' }))
+    .map((m) => ({
+      id: m.id,
+      role: m.role,
+      personId: m.person_id,
+      name: names.get(m.person_id) ?? 'Unknown',
+      linked: linked.has(m.person_id),
+    }))
     .sort((a, b) => (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9) || a.name.localeCompare(b.name))
 }
 
@@ -116,5 +129,14 @@ export async function removeClubMember(membershipId: string): Promise<void> {
 export async function mergeMembers(loserPersonId: string, winnerPersonId: string): Promise<void> {
   const supabase = createPlatformBrowserClient()
   const { error } = await supabase.rpc('merge_persons', { p_loser: loserPersonId, p_winner: winnerPersonId })
+  if (error) throw new Error(error.message)
+}
+
+/** Link an account-less roster member's Person to an existing user account by
+ *  email (keeps it a distinct Person, owned by that user). Authority + the email
+ *  lookup are enforced inside link_member_to_user. */
+export async function linkMemberToUser(personId: string, email: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.rpc('link_member_to_user', { p_person_id: personId, p_email: email })
   if (error) throw new Error(error.message)
 }
