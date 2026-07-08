@@ -21,6 +21,8 @@ import {
 } from '@/lib/platform/club-admin'
 import { createHonor, deleteHonor, loadClubHonors, rejectVerifiedHonor } from '@/lib/platform/honors-client'
 import type { HonorResult, HonorView } from '@/lib/platform/honors'
+import { createEvent, deleteEvent, loadClubEventsAdmin } from '@/lib/platform/events-client'
+import { EVENT_TYPE_LABEL, type EventType, type EventWithCounts } from '@/lib/platform/events'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
 // Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
@@ -77,6 +79,7 @@ export default function ManageClubPage() {
 
   const [honors, setHonors] = useState<HonorView[]>([])
   const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [events, setEvents] = useState<EventWithCounts[]>([])
 
   const loadRoster = useCallback(async () => {
     if (!club) return
@@ -96,12 +99,33 @@ export default function ManageClubPage() {
     }
   }, [club])
 
+  const loadEvents = useCallback(async () => {
+    if (!club) return
+    try {
+      setEvents(await loadClubEventsAdmin(club.id))
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }, [club])
+
   useEffect(() => {
     if (access === 'ok') {
       loadRoster()
       loadHonors()
+      loadEvents()
     }
-  }, [access, loadRoster, loadHonors])
+  }, [access, loadRoster, loadHonors, loadEvents])
+
+  async function onDeleteEvent(id: string, title: string) {
+    if (!confirm(`Delete "${title}"? This also removes its RSVPs.`)) return
+    try {
+      await deleteEvent(id)
+      toast.success('Event deleted')
+      await loadEvents()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
 
   async function onDeleteHonor(id: string, title: string) {
     if (!confirm(`Remove "${title}" from the cabinet? This cannot be undone.`)) return
@@ -309,6 +333,38 @@ export default function ManageClubPage() {
           <p className="mt-2 text-xs text-[#9a978d]">
             Use Link to connect a member to their account — once linked, you can promote them to Admin.
           </p>
+        </section>
+
+        {/* Events */}
+        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">
+            Events <span className="text-[#9a978d]">({events.length})</span>
+          </h2>
+          <p className="mt-1 text-sm text-[#6f6c63]">
+            Practices, matches, and socials. Members and newcomers can RSVP from your club page.
+          </p>
+          <div className="mt-3 divide-y divide-[#efece4]">
+            {events.length === 0 && <p className="py-2 text-sm text-[#9a978d]">No events yet — add one below.</p>}
+            {events.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-start justify-between gap-2 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#16150f]">
+                    {e.title}{' '}
+                    <span className="font-normal text-[#9a978d]">
+                      {[EVENT_TYPE_LABEL[e.event_type] ?? e.event_type, new Date(e.starts_at).toLocaleString()].join(' · ')}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#6f6c63]">
+                    {[e.location, `${e.going} going`].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" aria-label={`Delete ${e.title}`} onClick={() => onDeleteEvent(e.id, e.title)}>
+                  Delete
+                </Button>
+              </div>
+            ))}
+          </div>
+          {club && <EventForm clubId={club.id} onSaved={loadEvents} />}
         </section>
 
         {/* Honours */}
@@ -531,6 +587,92 @@ function HonorForm({
             setOpen(false)
           }}
         >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function EventForm({ clubId, onSaved }: { clubId: string; onSaved: () => Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const f = new FormData(form)
+    const title = String(f.get('title') || '').trim()
+    const startsAtRaw = String(f.get('starts_at') || '')
+    if (!title) {
+      toast.error('Title is required')
+      return
+    }
+    if (!startsAtRaw) {
+      toast.error('Start date/time is required')
+      return
+    }
+    const startsAt = new Date(startsAtRaw)
+    const endsAtRaw = String(f.get('ends_at') || '')
+    const endsAt = endsAtRaw ? new Date(endsAtRaw) : null
+    if (endsAt && endsAt <= startsAt) {
+      toast.error('End time must be after the start time')
+      return
+    }
+    setSaving(true)
+    try {
+      await createEvent({
+        clubId,
+        title,
+        eventType: String(f.get('event_type') || 'PRACTICE') as EventType,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt ? endsAt.toISOString() : null,
+        location: String(f.get('location') || '').trim() || null,
+        description: String(f.get('description') || '').trim() || null,
+      })
+      form.reset()
+      setOpen(false)
+      toast.success('Event added')
+      await onSaved()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" className="mt-4" onClick={() => setOpen(true)}>
+        + Add event
+      </Button>
+    )
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-4 space-y-3 border-t border-[#efece4] pt-4">
+      <div className="flex flex-wrap gap-2">
+        <Input name="title" aria-label="Event title" placeholder="Title, e.g. Sunday nets" className="h-9 w-64" />
+        <select name="event_type" className={`${selCls} h-9`} defaultValue="PRACTICE" aria-label="Event type">
+          <option value="PRACTICE">Practice</option>
+          <option value="MATCH">Match</option>
+          <option value="SOCIAL">Social</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-xs font-semibold text-[#6f6c63]" htmlFor="event-starts">Starts</label>
+        <Input id="event-starts" name="starts_at" type="datetime-local" className="h-9 w-52" />
+        <label className="text-xs font-semibold text-[#6f6c63]" htmlFor="event-ends">Ends (optional)</label>
+        <Input id="event-ends" name="ends_at" type="datetime-local" className="h-9 w-52" />
+      </div>
+      <Input name="location" placeholder="Location (optional)" className="h-9 w-full" />
+      <Input name="description" placeholder="Notes (optional)" className="h-9 w-full" />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+          {saving ? 'Saving…' : 'Add event'}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
           Cancel
         </Button>
       </div>
