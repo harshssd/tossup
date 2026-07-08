@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { getClubBySlug, countClubMembers } from '@/lib/platform/queries'
 import { TIER_META, toTier, initials } from '@/lib/platform/recognition'
+import { formatPlace } from '@/lib/platform/format'
 
 export const alt = 'Cricket club on TossUp'
 export const size = { width: 1200, height: 630 }
@@ -11,7 +12,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const club = await getClubBySlug(slug)
   const tier = toTier(club?.recognition_tier)
   const tierColor = TIER_META[tier].color
-  const place = club ? [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location : null
+  const place = club ? formatPlace(club, club.location) : null
   const members = club ? await countClubMembers(club.id) : 0
 
   return new ImageResponse(

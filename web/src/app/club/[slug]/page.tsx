@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { formatPlace } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const club = await getClubBySlug(slug)
   if (!club) return { title: 'Club not found — TossUp' }
 
-  const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
+  const place = formatPlace(club, club.location)
   const title = `${club.name} — Cricket Club on TossUp`
   const description =
     club.description ||
@@ -48,7 +49,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   ])
 
   const canManage = await isServerScopeAdmin('club', club.id)
-  const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
+  const place = formatPlace(club, club.location)
   const socials = (club.social_links ?? {}) as Record<string, string>
 
   return (

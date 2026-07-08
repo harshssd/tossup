@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { getTournament } from '@/lib/platform/queries'
 import { TIER_META, toTier } from '@/lib/platform/recognition'
+import { formatPlace, formatDateRange } from '@/lib/platform/format'
 
 export const alt = 'Cricket tournament on TossUp'
 export const size = { width: 1200, height: 630 }
@@ -11,10 +12,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { league, standings } = await getTournament(id)
   const tier = toTier(league?.recognition_tier)
   const tierColor = TIER_META[tier].color
-  const place = league ? [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue : null
-  const dates = league?.start_date
-    ? `${league.start_date}${league.end_date ? ` – ${league.end_date}` : ''}`
-    : null
+  const place = league ? formatPlace(league, league.venue) : null
+  const dates = formatDateRange(league?.start_date, league?.end_date)
   const leader = [...standings].sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0))[0]
 
   return new ImageResponse(
@@ -83,6 +82,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
                   alignSelf: 'flex-start',
                   marginTop: 24,
                   padding: '10px 22px',
@@ -93,7 +94,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                   fontWeight: 700,
                 }}
               >
-                🏆 Leading: {leader.name} · {Number(leader.points)} pts
+                <div style={{ display: 'flex', width: 18, height: 18, borderRadius: 999, backgroundColor: '#f4c430' }} />
+                Leading: {leader.name} · {Number(leader.points)} pts
               </div>
             ) : null}
           </div>

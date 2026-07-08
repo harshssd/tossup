@@ -30,9 +30,15 @@ export function ShareButton({ title, text, path, variant = 'pill', className }: 
       }
       return
     }
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard blocked (insecure context, denied permission, sandboxed
+      // iframe): fall back to a prompt so the user can still copy the link.
+      window.prompt('Copy this link:', url)
+    }
   }
 
   const whatsapp = () => {
@@ -64,7 +70,7 @@ export function ShareButton({ title, text, path, variant = 'pill', className }: 
     <div className={cn('flex items-center gap-1.5', className)}>
       <button type="button" onClick={share} className={pillCls}>
         {copied ? <Check className="h-3.5 w-3.5 text-[#1f9d57]" /> : <Share2 className="h-3.5 w-3.5" />}
-        {copied ? 'Link copied' : 'Share'}
+        <span aria-live="polite">{copied ? 'Link copied' : 'Share'}</span>
       </button>
       <button type="button" onClick={whatsapp} aria-label="Share on WhatsApp" className={pillCls}>
         <MessageCircle className="h-3.5 w-3.5 text-[#1f9d57]" /> WhatsApp

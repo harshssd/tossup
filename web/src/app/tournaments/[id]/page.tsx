@@ -14,6 +14,7 @@ import { getTournament } from '@/lib/platform/queries'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { formatPlace, formatDateRange } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,8 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { league } = await getTournament(id)
   if (!league) return { title: 'Tournament not found — TossUp' }
 
-  const place = [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue
-  const dates = league.start_date ? `${league.start_date}${league.end_date ? ` – ${league.end_date}` : ''}` : null
+  const place = formatPlace(league, league.venue)
+  const dates = formatDateRange(league.start_date, league.end_date)
   const title = `${league.name} — Cricket Tournament on TossUp`
   const description =
     league.description ||
@@ -45,7 +46,8 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   if (!league) notFound()
 
   const canManage = await isServerScopeAdmin('league', id)
-  const place = [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue
+  const place = formatPlace(league, league.venue)
+  const dates = formatDateRange(league.start_date, league.end_date)
 
   return (
     <PlatformShell>
@@ -68,10 +70,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
                   <MapPin className="h-3 w-3" /> {place}
                 </span>
               )}
-              {league.start_date && (
+              {dates && (
                 <span className="flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> {league.start_date}
-                  {league.end_date ? ` – ${league.end_date}` : ''}
+                  <CalendarDays className="h-3 w-3" /> {dates}
                 </span>
               )}
             </div>

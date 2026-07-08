@@ -9,6 +9,7 @@ import { roleLabel, type Tier } from '@/lib/platform/recognition'
 import { getPlayer } from '@/lib/platform/queries'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { formatPlace } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const player = await getPlayer(id)
   if (!player || player.merged_into_id) return { title: 'Player — TossUp' }
 
-  const place = [player.city, player.region, player.country].filter(Boolean).join(', ')
+  const place = formatPlace(player)
   const title = `${player.display_name} — Cricket Player on TossUp`
   const description = [roleLabel(player.primary_role), place, player.looking_for_club ? 'looking for a club' : null]
     .filter(Boolean)
@@ -38,7 +39,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   // A merged-away Person redirects to the canonical survivor.
   if (player.merged_into_id) redirect(`/player/${player.merged_into_id}`)
 
-  const place = [player.city, player.region, player.country].filter(Boolean).join(', ')
+  const place = formatPlace(player)
 
   return (
     <PlatformShell>
