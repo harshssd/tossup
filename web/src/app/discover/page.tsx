@@ -48,14 +48,9 @@ export default async function DiscoverPage({
     tab === 'clubs' ? '/club/new' : tab === 'players' ? '/player/new' : tab === 'recruiting' ? '/start' : '/tournaments/new'
   const createLabel =
     tab === 'clubs' ? 'Add club' : tab === 'players' ? 'Add profile' : tab === 'recruiting' ? 'Find your club' : 'Host tournament'
-  const count =
-    tab === 'clubs'
-      ? clubs.length
-      : tab === 'players'
-        ? players.length
-        : tab === 'recruiting'
-          ? recClubs.length + recPlayers.length
-          : tournaments.length
+  // The recruiting tab renders its own per-section counts, so this drives only
+  // the single-grid tabs.
+  const count = tab === 'clubs' ? clubs.length : tab === 'players' ? players.length : tab === 'tournaments' ? tournaments.length : 0
 
   return (
     <PlatformShell>

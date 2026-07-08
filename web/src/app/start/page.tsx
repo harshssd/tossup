@@ -28,26 +28,54 @@ export default async function StartPage() {
           <Link href="/account/sign-in?redirect=/start">
             <Button className="mt-6 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">Sign in to get started</Button>
           </Link>
+          <p className="mt-4 text-sm text-[#9a978d]">
+            or{' '}
+            <Link href="/discover?tab=clubs" className="font-semibold text-[#1f9d57] hover:underline">
+              browse clubs first
+            </Link>
+          </p>
         </div>
       </PlatformShell>
     )
   }
 
-  let initial = null
-  if (user.primaryPersonId) {
-    const supabase = await createPlatformServerClient()
-    const { data } = await supabase
-      .from('player_profiles')
-      .select('city, region, country, primary_role, availability, looking_for_club')
-      .eq('id', user.primaryPersonId)
-      .maybeSingle()
-    initial = data
+  const supabase = await createPlatformServerClient()
+
+  // Always operate on the user's canonical primary Person. The signup trigger
+  // normally creates + links one; if it's missing, ensure_self_person creates and
+  // links it (so we never orphan a second profile with primary_person_id left null).
+  let personId = user.primaryPersonId
+  if (!personId) {
+    const { data } = await supabase.rpc('ensure_self_person', {
+      p_display_name: user.name ?? user.email ?? 'Player',
+    })
+    personId = data ?? null
   }
+
+  if (!personId) {
+    return (
+      <PlatformShell>
+        <div className="mx-auto max-w-md px-4 py-20 text-center">
+          <h1 className="cy-display text-2xl font-bold text-[#16150f]">We couldn&apos;t set up your profile</h1>
+          <p className="mt-2 text-sm text-[#6f6c63]">Something went wrong. Please refresh and try again.</p>
+          <Link href="/discover?tab=clubs" className="mt-4 inline-block font-semibold text-[#1f9d57] hover:underline">
+            Browse clubs instead →
+          </Link>
+        </div>
+      </PlatformShell>
+    )
+  }
+
+  const { data: initial } = await supabase
+    .from('player_profiles')
+    .select('city, region, country, primary_role, availability, looking_for_club')
+    .eq('id', personId)
+    .maybeSingle()
 
   return (
     <PlatformShell>
       <div className="mx-auto max-w-2xl px-4 py-12">
-        <StartWizard personId={user.primaryPersonId} displayName={user.name ?? user.email ?? 'Player'} initial={initial} />
+        <StartWizard personId={personId} initial={initial} />
       </div>
     </PlatformShell>
   )

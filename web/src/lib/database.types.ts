@@ -284,6 +284,7 @@ export type Database = {
       allow_tournament_honors: { Args: { p_club_id: string; p_league_id: string }; Returns: undefined }
       is_club_member: { Args: { p_user: string; p_club: string }; Returns: boolean }
       decide_club_join_request: { Args: { p_request_id: string; p_approve: boolean }; Returns: undefined }
+      ensure_self_person: { Args: { p_display_name: string }; Returns: string }
       list_club_join_requests: {
         Args: { p_club_id: string }
         Returns: { id: string; user_id: string; requester_name: string; message: string | null; created_at: string }[]
