@@ -1,7 +1,13 @@
 import Link from 'next/link'
-import { Compass, Plus } from 'lucide-react'
+import { Compass, Plus, Shield } from 'lucide-react'
 import { CricketBall } from './CricketBall'
 import { PlatformAuthNav } from './PlatformAuthNav'
+
+const NAV_LINKS = [
+  { href: '/discover?tab=clubs', label: 'Clubs' },
+  { href: '/tournaments', label: 'Tournaments' },
+  { href: '/discover?tab=players', label: 'Players' },
+]
 
 // Clubhouse light theme chrome for every platform page. The `clubhouse` class
 // scopes a light token set so this subtree renders light while legacy pages
@@ -21,11 +27,27 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <nav className="flex items-center gap-1.5">
+            {/* On small screens the three type links collapse into one Discover entry. */}
             <Link
               href="/discover"
-              className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f]"
+              className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:hidden"
             >
               <Compass className="h-4 w-4" /> Discover
+            </Link>
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="hidden rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:flex"
+              >
+                {l.label}
+              </Link>
+            ))}
+            <Link
+              href="/club/new"
+              className="hidden items-center gap-1.5 rounded-full border border-[#d8d4c8] bg-white px-4 py-2 text-sm font-bold text-[#16150f] transition-colors hover:border-[#1f9d57] hover:text-[#0f5a30] sm:flex"
+            >
+              <Shield className="h-4 w-4" /> Start a club
             </Link>
             <Link
               href="/tournaments/new"

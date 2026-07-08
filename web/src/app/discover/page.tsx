@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { Plus } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { DiscoverFilters } from '@/components/platform/DiscoverFilters'
@@ -10,6 +11,12 @@ import type { Tier } from '@/lib/platform/recognition'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Discover — TossUp',
+  description:
+    'Discover cricket clubs, players, and tournaments near you — ranked by recognition, from your local turf to the big leagues.',
+}
 
 type Tab = 'clubs' | 'players' | 'tournaments'
 const TABS: { key: Tab; label: string }[] = [
@@ -31,7 +38,7 @@ export default async function DiscoverPage({
   const [clubs, players, tournaments] = await Promise.all([
     tab === 'clubs' ? listClubs({ ...common, tier: sp.tier as Tier | undefined, recruiting: !!sp.recruiting }) : [],
     tab === 'players' ? listPlayers({ ...common, role: sp.role, lookingForClub: !!sp.looking }) : [],
-    tab === 'tournaments' ? listTournaments({ ...common, tier: sp.tier as Tier | undefined }) : [],
+    tab === 'tournaments' ? listTournaments({ ...common, tier: sp.tier as Tier | undefined, status: sp.status }) : [],
   ])
 
   const createHref = tab === 'clubs' ? '/club/new' : tab === 'players' ? '/player/new' : '/tournaments/new'

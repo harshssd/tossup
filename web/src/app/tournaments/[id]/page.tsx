@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, CalendarDays, Settings } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -12,8 +13,32 @@ import { type Tier } from '@/lib/platform/recognition'
 import { getTournament } from '@/lib/platform/queries'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { ShareButton } from '@/components/platform/ShareButton'
+import { formatPlace, formatDateRange } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const { league } = await getTournament(id)
+  if (!league) return { title: 'Tournament not found — TossUp' }
+
+  const place = formatPlace(league, league.venue)
+  const dates = formatDateRange(league.start_date, league.end_date)
+  const title = `${league.name} — Cricket Tournament on TossUp`
+  const description =
+    league.description ||
+    [`${league.format || league.type} cricket tournament`, place, dates, `registration ${league.registration_status.toLowerCase()}`]
+      .filter(Boolean)
+      .join(' · ')
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
+  }
+}
 
 export default async function TournamentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -21,7 +46,8 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   if (!league) notFound()
 
   const canManage = await isServerScopeAdmin('league', id)
-  const place = [league.city, league.region, league.country].filter(Boolean).join(', ') || league.venue
+  const place = formatPlace(league, league.venue)
+  const dates = formatDateRange(league.start_date, league.end_date)
 
   return (
     <PlatformShell>
@@ -44,10 +70,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
                   <MapPin className="h-3 w-3" /> {place}
                 </span>
               )}
-              {league.start_date && (
+              {dates && (
                 <span className="flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> {league.start_date}
-                  {league.end_date ? ` – ${league.end_date}` : ''}
+                  <CalendarDays className="h-3 w-3" /> {dates}
                 </span>
               )}
             </div>
@@ -55,6 +80,14 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           <RecognitionBadge tier={league.recognition_tier as Tier} size="md" />
         </div>
         {league.description && <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#3a382f]">{league.description}</p>}
+        <ShareButton
+          className="mt-5"
+          title={`${league.name} — Cricket Tournament on TossUp`}
+          text={[`${league.name} on TossUp`, place, league.registration_status === 'OPEN' ? 'registration open' : null]
+            .filter(Boolean)
+            .join(' · ')}
+          path={`/tournaments/${league.id}`}
+        />
         {canManage && (
           <Link href={`/tournaments/${league.id}/manage`} className="mt-5 inline-block">
             <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">

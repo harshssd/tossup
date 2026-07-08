@@ -11,19 +11,20 @@ type Tab = 'clubs' | 'players' | 'tournaments'
 const selectCls =
   'h-9 rounded-md border border-[#e7e4db] bg-white px-2 text-sm text-[#16150f] focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
 
-export function DiscoverFilters({ tab }: { tab: Tab }) {
+export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; basePath?: string }) {
   const router = useRouter()
   const sp = useSearchParams()
   const [q, setQ] = useState(sp.get('q') ?? '')
 
   function apply(overrides: Record<string, string>) {
     const params = new URLSearchParams(sp.toString())
-    params.set('tab', tab)
+    // The tab param only means something on /discover; single-type pages don't need it.
+    if (basePath === '/discover') params.set('tab', tab)
     for (const [k, v] of Object.entries({ q, ...overrides })) {
       if (v) params.set(k, v)
       else params.delete(k)
     }
-    router.push(`/discover?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   return (
@@ -62,6 +63,14 @@ export function DiscoverFilters({ tab }: { tab: Tab }) {
               {t.charAt(0) + t.slice(1).toLowerCase()}
             </option>
           ))}
+        </select>
+      )}
+      {tab === 'tournaments' && (
+        <select className={selectCls} defaultValue={sp.get('status') ?? ''} onChange={(e) => apply({ status: e.target.value })}>
+          <option value="">Any status</option>
+          <option value="OPEN">Open for teams</option>
+          <option value="UPCOMING">Upcoming</option>
+          <option value="CLOSED">Closed</option>
         </select>
       )}
       {tab === 'players' && (
