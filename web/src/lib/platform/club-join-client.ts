@@ -20,20 +20,24 @@ export async function requestToJoin(clubId: string, message?: string): Promise<v
   if (error) throw new Error(error.message)
 }
 
-/** Withdraw your own pending request. */
-export async function withdrawJoinRequest(clubId: string): Promise<void> {
+/** Withdraw your own pending request. Returns how many rows were removed — 0 means
+ *  the request was already decided (e.g. an admin approved it in the meantime), so
+ *  the caller should re-sync rather than assume success. */
+export async function withdrawJoinRequest(clubId: string): Promise<number> {
   const supabase = createPlatformBrowserClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) throw new Error('You must be signed in')
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('club_join_requests')
     .delete()
     .eq('club_id', clubId)
     .eq('user_id', user.id)
     .eq('status', 'PENDING')
+    .select('id')
   if (error) throw new Error(error.message)
+  return data?.length ?? 0
 }
 
 export interface JoinRequest {

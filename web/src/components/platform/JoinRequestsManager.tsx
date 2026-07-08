@@ -31,9 +31,9 @@ export function JoinRequestsManager({ clubId }: { clubId: string }) {
     setPendingId(req.id)
     try {
       await decideJoinRequest(req.id, approve)
-      // Drop it from the pending list; a reload would also work.
-      setRequests((rs) => rs.filter((r) => r.id !== req.id))
       toast.success(approve ? `${req.requester_name} added to the club` : 'Request declined')
+      // Reload (like the sibling managers) so concurrently-arrived requests show too.
+      await load()
     } catch (err) {
       toast.error((err as Error).message)
     } finally {
@@ -48,7 +48,7 @@ export function JoinRequestsManager({ clubId }: { clubId: string }) {
   return (
     <div className="mt-3 space-y-2.5">
       {requests.map((r) => (
-        <div key={r.id} className="cy-panel flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[#e7e4db] bg-white p-4">
+        <div key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#efece4] p-4">
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 font-semibold text-[#16150f]">
               <UserPlus className="h-4 w-4 text-[#1f9d57]" /> {r.requester_name}

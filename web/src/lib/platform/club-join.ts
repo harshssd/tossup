@@ -34,6 +34,6 @@ export async function getViewerJoinState(clubId: string): Promise<ViewerJoinStat
   return {
     signedIn: true,
     isMember: isMember === true,
-    requestStatus: (req?.status as JoinRequestStatus | undefined) ?? null,
+    requestStatus: req?.status ?? null,
   }
 }

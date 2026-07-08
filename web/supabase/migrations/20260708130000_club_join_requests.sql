@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS public.club_join_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   club_id uuid NOT NULL REFERENCES public.clubs(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,     -- the requester (auth user)
-  person_id uuid REFERENCES public.player_profiles(id) ON DELETE SET NULL, -- snapshot of the Person added on approve
   message text,
   status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
   decided_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
@@ -20,10 +19,17 @@ CREATE TABLE IF NOT EXISTS public.club_join_requests (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_club_join_pending
   ON public.club_join_requests (club_id, user_id) WHERE status = 'PENDING';
 CREATE INDEX IF NOT EXISTS idx_club_join_club_status ON public.club_join_requests (club_id, status);
+-- Serves getViewerJoinState: latest request for (club, viewer) across all statuses.
+CREATE INDEX IF NOT EXISTS idx_club_join_user ON public.club_join_requests (club_id, user_id, created_at DESC);
 
 ALTER TABLE public.club_join_requests ENABLE ROW LEVEL SECURITY;
 
 -- Reads: requester sees own; club admins see their club's.
+DROP POLICY IF EXISTS cjr_self_read ON public.club_join_requests;
+DROP POLICY IF EXISTS cjr_admin_read ON public.club_join_requests;
+DROP POLICY IF EXISTS cjr_self_insert ON public.club_join_requests;
+DROP POLICY IF EXISTS cjr_self_delete ON public.club_join_requests;
+DROP POLICY IF EXISTS cjr_admin_delete ON public.club_join_requests;
 CREATE POLICY cjr_self_read ON public.club_join_requests
   FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY cjr_admin_read ON public.club_join_requests
@@ -89,7 +95,7 @@ BEGIN
       INSERT INTO public.club_memberships (club_id, person_id, role) VALUES (r.club_id, v_person, 'MEMBER');
     END IF;
     UPDATE public.club_join_requests
-      SET status = 'APPROVED', person_id = v_person, decided_by = auth.uid(), decided_at = now(), updated_at = now()
+      SET status = 'APPROVED', decided_by = auth.uid(), decided_at = now(), updated_at = now()
       WHERE id = p_request_id;
   ELSE
     UPDATE public.club_join_requests
@@ -123,6 +129,13 @@ BEGIN
     JOIN public.users u ON u.id = r.user_id
     LEFT JOIN public.player_profiles pp ON pp.id = u.primary_person_id
     WHERE r.club_id = p_club_id AND r.status = 'PENDING'
+      -- Hide requests from users who are already members (e.g. self-joined via
+      -- cmem_self_join), so a stale request doesn't sit in the approve queue.
+      AND NOT EXISTS (
+        SELECT 1 FROM public.club_memberships m
+        JOIN public.player_profiles mp ON mp.id = m.person_id
+        WHERE m.club_id = r.club_id AND mp.user_id = r.user_id
+      )
     ORDER BY r.created_at ASC;
 END;
 $$;

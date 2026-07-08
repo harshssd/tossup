@@ -121,7 +121,7 @@ export type Database = {
       }
       club_join_requests: {
         Row: {
-          id: string; club_id: string; user_id: string; person_id: string | null
+          id: string; club_id: string; user_id: string
           message: string | null; status: 'PENDING' | 'APPROVED' | 'REJECTED'
           decided_by: string | null; decided_at: string | null; created_at: string; updated_at: string
         }
