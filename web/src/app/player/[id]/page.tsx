@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, Mail, Phone, Search } from 'lucide-react'
+import { MapPin, Mail, Phone, Search, Trophy } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -10,6 +10,20 @@ import { getPlayer } from '@/lib/platform/queries'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
 import { formatPlace } from '@/lib/platform/format'
+import { getPlayerHonors } from '@/lib/platform/honors'
+
+const HONOR_DOT: Record<string, string> = {
+  CHAMPION: '#f4c430',
+  RUNNER_UP: '#c0c5cc',
+  THIRD: '#cd7f32',
+  SPECIAL: '#1f9d57',
+}
+const HONOR_LABEL: Record<string, string> = {
+  CHAMPION: 'Champions',
+  RUNNER_UP: 'Runners-up',
+  THIRD: 'Third',
+  SPECIAL: 'Honour',
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +54,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   if (player.merged_into_id) redirect(`/player/${player.merged_into_id}`)
 
   const place = formatPlace(player)
+  const honors = await getPlayerHonors(player.id)
 
   return (
     <PlatformShell>
@@ -70,6 +85,35 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
         <Badge className="mt-3 gap-1 bg-[#e7f4ec] text-[#0f5a30]">
           <Search className="h-3 w-3" /> Looking for a club
         </Badge>
+      )}
+
+      {honors.length > 0 && (
+        <section className="mt-6">
+          <h2 className="cy-display flex items-center gap-2 text-sm font-semibold text-[#16150f]">
+            <Trophy className="h-4 w-4 text-[#c99a1e]" /> Honours
+          </h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {honors.map((h) => (
+              <span
+                key={h.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#e7e4db] bg-white px-3 py-1 text-xs text-[#3a382f]"
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: HONOR_DOT[h.result] ?? HONOR_DOT.SPECIAL }} />
+                <span className="font-semibold text-[#16150f]">{HONOR_LABEL[h.result] ?? 'Honour'}</span>
+                {h.year && <span>{h.year}</span>}
+                <span className="text-[#9a978d]">·</span>
+                {h.clubSlug ? (
+                  <Link href={`/club/${h.clubSlug}`} className="text-[#2257b3] hover:underline">
+                    {h.clubName ?? 'Club'}
+                  </Link>
+                ) : (
+                  <span>{h.clubName ?? 'Club'}</span>
+                )}
+                {h.asCaptain && <span className="font-semibold text-[#0f5a30]">(captain)</span>}
+              </span>
+            ))}
+          </div>
+        </section>
       )}
 
       {player.bio && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{player.bio}</p>}
