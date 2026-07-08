@@ -241,7 +241,7 @@ export type Database = {
       list_my_admin_clubs: { Args: Record<string, never>; Returns: { id: string; name: string; slug: string }[] }
       conclude_tournament: {
         Args: { p_league_id: string; p_champion_team_id: string; p_runner_up_team_id?: string | null }
-        Returns: undefined
+        Returns: number
       }
     }
     Enums: {

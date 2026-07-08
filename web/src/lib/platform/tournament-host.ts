@@ -77,19 +77,22 @@ export async function hostSaveFixtureResult(id: string, patch: Partial<Fixture>)
 
 /** Conclude a tournament: record champion (+ optional runner-up) and mint
  *  TOSSUP_VERIFIED honors into the winning clubs' cabinets. Host-only (RPC
- *  self-checks is_scope_admin). Re-callable — it rewrites verified honors. */
+ *  self-checks is_scope_admin). Re-callable — it rewrites verified honors.
+ *  Returns the number of verified honors written (0 if no winning team belongs
+ *  to a club that registered on TossUp). */
 export async function concludeTournament(
   leagueId: string,
   championTeamId: string,
   runnerUpTeamId?: string | null
-): Promise<void> {
+): Promise<number> {
   const supabase = createPlatformBrowserClient()
-  const { error } = await supabase.rpc('conclude_tournament', {
+  const { data, error } = await supabase.rpc('conclude_tournament', {
     p_league_id: leagueId,
     p_champion_team_id: championTeamId,
     p_runner_up_team_id: runnerUpTeamId ?? undefined,
   })
   if (error) throw new Error(error.message)
+  return (data as number) ?? 0
 }
 
 /** Read a tournament as the authenticated admin. Mirrors queries.getTournament
@@ -125,7 +128,12 @@ export interface MyAdminClub {
 export async function getMyAdminClubs(): Promise<MyAdminClub[]> {
   const supabase = createPlatformBrowserClient()
   const { data, error } = await supabase.rpc('list_my_admin_clubs')
-  if (error) return []
+  if (error) {
+    // Degrade to empty (never block the register form) but leave a breadcrumb
+    // so a real misconfig isn't invisible as "the club picker never appears".
+    console.warn('getMyAdminClubs:', error.message)
+    return []
+  }
   return (data ?? []) as MyAdminClub[]
 }
 

@@ -341,8 +341,12 @@ function ConcludeSection({
     }
     setSaving(true)
     try {
-      await concludeTournament(league.id, champion, runnerUp || null)
-      toast.success('Tournament concluded — verified honors updated')
+      const written = await concludeTournament(league.id, champion, runnerUp || null)
+      toast.success(
+        written > 0
+          ? `Tournament concluded — ${written} verified honor${written === 1 ? '' : 's'} written`
+          : 'Tournament concluded. No verified honors were written — winners must have registered as a club to earn one.'
+      )
       setOpen(false)
       onDone()
     } catch (err) {
@@ -350,6 +354,13 @@ function ConcludeSection({
     } finally {
       setSaving(false)
     }
+  }
+
+  function cancel() {
+    // Revert unsaved picks to the saved/default values before closing.
+    setChampion(league.champion_team_id ?? leaderId)
+    setRunnerUp(league.runner_up_team_id ?? '')
+    setOpen(false)
   }
 
   return (
@@ -401,7 +412,7 @@ function ConcludeSection({
           <Button size="sm" onClick={save} disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
             {saving ? 'Saving…' : 'Save result'}
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button size="sm" variant="ghost" onClick={cancel}>Cancel</Button>
         </div>
       )}
     </section>

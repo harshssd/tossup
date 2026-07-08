@@ -14,9 +14,10 @@ beforeEach(() => {
 })
 
 describe('concludeTournament', () => {
-  it('passes champion + runner-up to the rpc', async () => {
-    rpc.mockResolvedValue({ error: null })
-    await concludeTournament('lg1', 'champ', 'runner')
+  it('passes champion + runner-up to the rpc and returns the honor count', async () => {
+    rpc.mockResolvedValue({ data: 2, error: null })
+    const written = await concludeTournament('lg1', 'champ', 'runner')
+    expect(written).toBe(2)
     expect(rpc).toHaveBeenCalledWith('conclude_tournament', {
       p_league_id: 'lg1',
       p_champion_team_id: 'champ',
@@ -25,7 +26,7 @@ describe('concludeTournament', () => {
   })
 
   it('omits runner-up when not given (undefined, not null)', async () => {
-    rpc.mockResolvedValue({ error: null })
+    rpc.mockResolvedValue({ data: 1, error: null })
     await concludeTournament('lg1', 'champ', null)
     expect(rpc).toHaveBeenCalledWith('conclude_tournament', {
       p_league_id: 'lg1',
@@ -34,8 +35,18 @@ describe('concludeTournament', () => {
     })
   })
 
+  it('returns 0 when no verified honors were written (no registered clubs)', async () => {
+    rpc.mockResolvedValue({ data: 0, error: null })
+    expect(await concludeTournament('lg1', 'champ')).toBe(0)
+  })
+
+  it('coerces a null rpc payload to 0', async () => {
+    rpc.mockResolvedValue({ data: null, error: null })
+    expect(await concludeTournament('lg1', 'champ')).toBe(0)
+  })
+
   it('throws the rpc error message', async () => {
-    rpc.mockResolvedValue({ error: { message: 'only a tournament host can conclude it' } })
+    rpc.mockResolvedValue({ data: null, error: { message: 'only a tournament host can conclude it' } })
     await expect(concludeTournament('lg1', 'champ')).rejects.toThrow('only a tournament host can conclude it')
   })
 })
