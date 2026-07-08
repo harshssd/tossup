@@ -22,3 +22,15 @@ export async function createOwnedPlayerProfile(
   if (error) throw new Error(error.message)
   return data as PlayerProfile
 }
+
+/** Update fields on a profile the current user owns (RLS pp_owner_update: user_id
+ *  = self). Used by the onboarding wizard to set looking_for_club + location/role. */
+export async function updateOwnedProfile(personId: string, fields: Partial<PlayerProfile>): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('You must be signed in')
+  const { error } = await supabase.from('player_profiles').update(fields).eq('id', personId)
+  if (error) throw new Error(error.message)
+}

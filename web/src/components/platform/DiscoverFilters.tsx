@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { COUNTRIES, TIERS, PLAYING_ROLES } from '@/lib/platform/recognition'
 
-type Tab = 'clubs' | 'players' | 'tournaments'
+type Tab = 'clubs' | 'players' | 'tournaments' | 'recruiting'
 
 const selectCls =
   'h-9 rounded-md border border-[#e7e4db] bg-white px-2 text-sm text-[#16150f] focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
@@ -55,7 +55,7 @@ export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; bas
         placeholder="State / city"
         className="h-9 w-36"
       />
-      {tab !== 'players' && (
+      {(tab === 'clubs' || tab === 'tournaments') && (
         <select className={selectCls} defaultValue={sp.get('tier') ?? ''} onChange={(e) => apply({ tier: e.target.value })}>
           <option value="">Any recognition</option>
           {TIERS.map((t) => (

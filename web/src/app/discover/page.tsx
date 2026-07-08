@@ -18,11 +18,12 @@ export const metadata: Metadata = {
     'Discover cricket clubs, players, and tournaments near you — ranked by recognition, from your local turf to the big leagues.',
 }
 
-type Tab = 'clubs' | 'players' | 'tournaments'
+type Tab = 'clubs' | 'players' | 'tournaments' | 'recruiting'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'clubs', label: 'Clubs' },
   { key: 'players', label: 'Players' },
   { key: 'tournaments', label: 'Tournaments' },
+  { key: 'recruiting', label: 'Recruiting' },
 ]
 const TICKER = ['Find your club', 'Recruit players', 'Host a tournament', 'Live standings', 'Recognized results', 'Grassroots → Official']
 
@@ -32,18 +33,29 @@ export default async function DiscoverPage({
   searchParams: Promise<Record<string, string | undefined>>
 }) {
   const sp = await searchParams
-  const tab: Tab = (['clubs', 'players', 'tournaments'].includes(sp.tab ?? '') ? sp.tab : 'clubs') as Tab
+  const tab: Tab = (['clubs', 'players', 'tournaments', 'recruiting'].includes(sp.tab ?? '') ? sp.tab : 'clubs') as Tab
   const common = { q: sp.q, country: sp.country, region: sp.region }
 
-  const [clubs, players, tournaments] = await Promise.all([
+  const [clubs, players, tournaments, recClubs, recPlayers] = await Promise.all([
     tab === 'clubs' ? listClubs({ ...common, tier: sp.tier as Tier | undefined, recruiting: !!sp.recruiting }) : [],
     tab === 'players' ? listPlayers({ ...common, role: sp.role, lookingForClub: !!sp.looking }) : [],
     tab === 'tournaments' ? listTournaments({ ...common, tier: sp.tier as Tier | undefined, status: sp.status }) : [],
+    tab === 'recruiting' ? listClubs({ ...common, recruiting: true }) : [],
+    tab === 'recruiting' ? listPlayers({ ...common, lookingForClub: true }) : [],
   ])
 
-  const createHref = tab === 'clubs' ? '/club/new' : tab === 'players' ? '/player/new' : '/tournaments/new'
-  const createLabel = tab === 'clubs' ? 'Add club' : tab === 'players' ? 'Add profile' : 'Host tournament'
-  const count = tab === 'clubs' ? clubs.length : tab === 'players' ? players.length : tournaments.length
+  const createHref =
+    tab === 'clubs' ? '/club/new' : tab === 'players' ? '/player/new' : tab === 'recruiting' ? '/start' : '/tournaments/new'
+  const createLabel =
+    tab === 'clubs' ? 'Add club' : tab === 'players' ? 'Add profile' : tab === 'recruiting' ? 'Find your club' : 'Host tournament'
+  const count =
+    tab === 'clubs'
+      ? clubs.length
+      : tab === 'players'
+        ? players.length
+        : tab === 'recruiting'
+          ? recClubs.length + recPlayers.length
+          : tournaments.length
 
   return (
     <PlatformShell>
@@ -114,23 +126,69 @@ export default async function DiscoverPage({
           <DiscoverFilters tab={tab} />
         </div>
 
-        <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#9a978d]">
-          {count} {count === 1 ? 'result' : 'results'}
-        </p>
+        {tab === 'recruiting' ? (
+          <div className="mt-6 space-y-10">
+            <div className="rounded-2xl border border-dashed border-[#bfe3cc] bg-[#f2faf5] px-5 py-4">
+              <p className="text-sm font-semibold text-[#0f5a30]">New in town, or looking for a game?</p>
+              <p className="mt-0.5 text-sm text-[#3a382f]">
+                Tell us where you are and what you play — we&apos;ll match you with clubs recruiting near you, and clubs can find you.
+              </p>
+              <Link href="/start" className="mt-2 inline-block text-sm font-bold text-[#1f9d57] hover:underline">
+                Find your club →
+              </Link>
+            </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tab === 'clubs' && clubs.map((c, i) => <ClubCard key={c.id} club={c} index={i} />)}
-          {tab === 'players' && players.map((p, i) => <PlayerCard key={p.id} player={p} index={i} />)}
-          {tab === 'tournaments' && tournaments.map((l, i) => <TournamentCard key={l.id} league={l} index={i} />)}
-        </div>
+            <section>
+              <h2 className="cy-display text-lg font-bold text-[#16150f]">
+                Clubs recruiting <span className="text-[#9a978d]">({recClubs.length})</span>
+              </h2>
+              {recClubs.length === 0 ? (
+                <p className="mt-2 text-sm text-[#8a877d]">No clubs are recruiting here right now.</p>
+              ) : (
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {recClubs.map((c, i) => (
+                    <ClubCard key={c.id} club={c} index={i} />
+                  ))}
+                </div>
+              )}
+            </section>
 
-        {count === 0 && (
-          <div className="mt-20 text-center">
-            <p className="text-sm text-[#8a877d]">Nothing here yet.</p>
-            <Link href={createHref} className="mt-2 inline-block font-bold text-[#1f9d57] hover:underline">
-              {createLabel} →
-            </Link>
+            <section>
+              <h2 className="cy-display text-lg font-bold text-[#16150f]">
+                Players looking for a club <span className="text-[#9a978d]">({recPlayers.length})</span>
+              </h2>
+              {recPlayers.length === 0 ? (
+                <p className="mt-2 text-sm text-[#8a877d]">No players are looking right now.</p>
+              ) : (
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {recPlayers.map((p, i) => (
+                    <PlayerCard key={p.id} player={p} index={i} />
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
+        ) : (
+          <>
+            <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#9a978d]">
+              {count} {count === 1 ? 'result' : 'results'}
+            </p>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {tab === 'clubs' && clubs.map((c, i) => <ClubCard key={c.id} club={c} index={i} />)}
+              {tab === 'players' && players.map((p, i) => <PlayerCard key={p.id} player={p} index={i} />)}
+              {tab === 'tournaments' && tournaments.map((l, i) => <TournamentCard key={l.id} league={l} index={i} />)}
+            </div>
+
+            {count === 0 && (
+              <div className="mt-20 text-center">
+                <p className="text-sm text-[#8a877d]">Nothing here yet.</p>
+                <Link href={createHref} className="mt-2 inline-block font-bold text-[#1f9d57] hover:underline">
+                  {createLabel} →
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PlatformShell>

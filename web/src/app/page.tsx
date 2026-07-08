@@ -64,10 +64,10 @@ export default function Home() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/discover"
+              href="/start"
               className="flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-10px_rgba(31,157,87,0.7)] transition-transform hover:scale-[1.03]"
             >
-              <Compass className="h-4 w-4" /> Discover clubs
+              <Compass className="h-4 w-4" /> Find your club
             </Link>
             <Link
               href="/tournaments/new"
