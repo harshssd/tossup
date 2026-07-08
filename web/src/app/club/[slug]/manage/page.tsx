@@ -76,6 +76,7 @@ export default function ManageClubPage() {
   }, [slug])
 
   const [honors, setHonors] = useState<HonorView[]>([])
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
 
   const loadRoster = useCallback(async () => {
     if (!club) return
@@ -114,18 +115,22 @@ export default function ManageClubPage() {
   }
 
   async function onRejectHonor(id: string, title: string) {
+    if (rejectingId) return
     if (
       !confirm(
-        `Reject the verified honour "${title}"? This removes it and stops that tournament from adding it back. Use this if it isn't your club's or the title is wrong.`
+        `Reject the verified honour "${title}"? This removes ALL of your club's verified honours from that tournament and stops it from adding them back. Only the tournament host can restore them later. Use this if it isn't your club's or the title is wrong.`
       )
     )
       return
+    setRejectingId(id)
     try {
       await rejectVerifiedHonor(id)
       toast.success('Verified honour rejected')
       await loadHonors()
     } catch (err) {
       toast.error((err as Error).message)
+    } finally {
+      setRejectingId(null)
     }
   }
 
@@ -339,8 +344,14 @@ export default function ManageClubPage() {
                   )}
                 </div>
                 {h.source === 'TOSSUP_VERIFIED' ? (
-                  <Button size="sm" variant="outline" aria-label={`Reject ${h.title}`} onClick={() => onRejectHonor(h.id, h.title)}>
-                    Not us
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-label={`Reject ${h.title}`}
+                    disabled={rejectingId === h.id}
+                    onClick={() => onRejectHonor(h.id, h.title)}
+                  >
+                    {rejectingId === h.id ? 'Rejecting…' : 'Not us'}
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" aria-label={`Remove ${h.title}`} onClick={() => onDeleteHonor(h.id, h.title)}>

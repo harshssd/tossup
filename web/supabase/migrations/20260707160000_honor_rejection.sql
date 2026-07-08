@@ -37,17 +37,25 @@ BEGIN
   IF NOT is_scope_admin(auth.uid(), 'club', h.club_id) THEN
     RAISE EXCEPTION 'only a club admin can reject its honors';
   END IF;
+  -- Same lock conclude_tournament takes, so a reject can't race a concurrent
+  -- conclude that already evaluated NOT EXISTS honor_rejections and would
+  -- otherwise re-mint the honor after this DELETE.
+  PERFORM pg_advisory_xact_lock(hashtextextended(h.league_id::text, 99));
   INSERT INTO honor_rejections (club_id, league_id, rejected_by)
     VALUES (h.club_id, h.league_id, auth.uid())
     ON CONFLICT (club_id, league_id) DO NOTHING;
+  -- League-scoped: removes ALL of this club's verified honors from that
+  -- tournament (champion AND runner-up), matching "this tournament isn't us".
   DELETE FROM honors
     WHERE club_id = h.club_id AND league_id = h.league_id AND source = 'TOSSUP_VERIFIED';
 END $$;
 REVOKE EXECUTE ON FUNCTION public.reject_tournament_honor(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.reject_tournament_honor(uuid) TO authenticated;
 
--- Undo a rejection (recourse for a mis-click). The honor reappears only when the
--- host next concludes the tournament.
+-- Undo a rejection (API-level recourse; no UI yet — a "restore" affordance is a
+-- deferred follow-up). Even after this, the honor reappears only when the host
+-- next concludes the tournament, so from the club's side a reject is effectively
+-- durable — the confirm copy says so.
 CREATE OR REPLACE FUNCTION public.allow_tournament_honors(p_club_id uuid, p_league_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
