@@ -11,6 +11,7 @@ import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import {
   approveRegistration,
+  concludeTournament,
   getHostTournament,
   getRegistrations,
   getTournamentAdminState,
@@ -307,8 +308,103 @@ export default function ManageTournamentPage() {
           <StandingsTable rows={standings} />
         </div>
       </section>
+
+      {/* Conclude → verified honors */}
+      <ConcludeSection league={league} teams={teams} standings={standings} onDone={load} />
     </div>
     </PlatformShell>
+  )
+}
+
+function ConcludeSection({
+  league, teams, standings, onDone,
+}: {
+  league: League; teams: TournamentTeam[]; standings: Standing[]; onDone: () => void
+}) {
+  // Default the champion to the standings leader (first row of the auto table).
+  const leaderId = standings.find((s) => s.team_id)?.team_id ?? ''
+  const [champion, setChampion] = useState<string>(league.champion_team_id ?? leaderId)
+  const [runnerUp, setRunnerUp] = useState<string>(league.runner_up_team_id ?? '')
+  const [saving, setSaving] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  const teamName = (tid: string | null) => teams.find((t) => t.id === tid)?.name ?? '—'
+
+  async function save() {
+    if (!champion) {
+      toast.error('Pick a champion')
+      return
+    }
+    if (runnerUp && runnerUp === champion) {
+      toast.error('Runner-up must differ from the champion')
+      return
+    }
+    setSaving(true)
+    try {
+      await concludeTournament(league.id, champion, runnerUp || null)
+      toast.success('Tournament concluded — verified honors updated')
+      setOpen(false)
+      onDone()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+      <h2 className="cy-display text-xl font-semibold text-[#16150f]">Conclude tournament</h2>
+      {league.concluded_at ? (
+        <div className="mt-2 rounded-xl border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2 text-sm text-[#3a382f]">
+          <p>
+            <span className="font-semibold text-[#0f5a30]">Champions:</span> {teamName(league.champion_team_id)}
+            {league.runner_up_team_id && (
+              <>
+                {' · '}
+                <span className="text-[#9a978d]">Runners-up:</span> {teamName(league.runner_up_team_id)}
+              </>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-[#9a978d]">
+            Verified honors were written to the winning clubs&apos; cabinets (clubs that registered on TossUp).
+          </p>
+        </div>
+      ) : (
+        <p className="mt-1 text-sm text-[#6f6c63]">
+          Name the winners. TossUp writes a verified trophy into each winning club&apos;s cabinet.
+        </p>
+      )}
+
+      {teams.length === 0 ? (
+        <p className="mt-3 text-sm text-[#9a978d]">Add teams first.</p>
+      ) : !open ? (
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => setOpen(true)}>
+          {league.concluded_at ? 'Change result' : 'Conclude tournament'}
+        </Button>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs text-[#9a978d]">
+            Champion
+            <select value={champion} onChange={(e) => setChampion(e.target.value)} className={selCls}>
+              <option value="" disabled>Pick champion</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[#9a978d]">
+            Runner-up (optional)
+            <select value={runnerUp} onChange={(e) => setRunnerUp(e.target.value)} className={selCls}>
+              <option value="">None</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+          <Button size="sm" onClick={save} disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+            {saving ? 'Saving…' : 'Save result'}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+        </div>
+      )}
+    </section>
   )
 }
 

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, CalendarDays, Settings } from 'lucide-react'
+import { MapPin, CalendarDays, Settings, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -48,6 +48,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   const canManage = await isServerScopeAdmin('league', id)
   const place = formatPlace(league, league.venue)
   const dates = formatDateRange(league.start_date, league.end_date)
+  const championName = league.concluded_at
+    ? teams.find((t) => t.id === league.champion_team_id)?.name ?? null
+    : null
+  const runnerUpName = teams.find((t) => t.id === league.runner_up_team_id)?.name ?? null
 
   return (
     <PlatformShell>
@@ -96,6 +100,24 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           </Link>
         )}
       </div>
+
+      {championName && (
+        <div
+          className="mt-6 flex items-center gap-3 overflow-hidden rounded-2xl border p-5"
+          style={{ borderColor: '#f0d98a', background: 'linear-gradient(105deg,#fbf3d6,#fdfaf0)' }}
+        >
+          <Trophy className="h-8 w-8 shrink-0 text-[#c99a1e]" />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#8a6d12]">Champions</p>
+            <p className="cy-display text-2xl font-semibold text-[#16150f]">{championName}</p>
+            {runnerUpName && (
+              <p className="text-xs text-[#6f6c63]">
+                <span className="text-[#9a978d]">Runners-up:</span> {runnerUpName}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="mt-8">
         {/* key on the tournament id so a soft-nav to another board remounts

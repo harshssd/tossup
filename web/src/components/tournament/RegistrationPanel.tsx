@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { getMyRegistration, registerTeam } from '@/lib/platform/tournament-host'
+import { getMyAdminClubs, getMyRegistration, registerTeam, type MyAdminClub } from '@/lib/platform/tournament-host'
 import type { Registration } from '@/lib/platform/queries'
 
 const STATUS_COPY: Record<string, { label: string; cls: string; note: string }> = {
@@ -20,6 +20,7 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
   const router = useRouter()
   const [state, setState] = useState<'checking' | 'guest' | 'ready'>('checking')
   const [mine, setMine] = useState<Registration | null>(null)
+  const [adminClubs, setAdminClubs] = useState<MyAdminClub[]>([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -29,6 +30,11 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
         if (cancelled) return
         setMine(reg)
         setState('ready')
+        // Clubs the user administers → the "register as your club" picker. Only
+        // a consented club link lets a verified honor reach that club's cabinet.
+        getMyAdminClubs().then((clubs) => {
+          if (!cancelled) setAdminClubs(clubs)
+        })
       })
       .catch(() => {
         // No session (or RLS) → treat as guest; the form prompts sign-in.
@@ -86,6 +92,7 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
     if (!team_name) return
     setSaving(true)
     try {
+      const club_id = String(f.get('club_id') || '').trim() || null
       await registerTeam({
         league_id: leagueId,
         team_name,
@@ -93,6 +100,7 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
         contact_email: str(f, 'contact_email'),
         contact_phone: str(f, 'contact_phone'),
         notes: str(f, 'notes'),
+        club_id,
       })
       toast.success('Registration submitted')
       const reg = await getMyRegistration(leagueId)
@@ -117,6 +125,24 @@ export function RegistrationPanel({ leagueId, registrationStatus }: { leagueId: 
           </Label>
           <Input name="team_name" required placeholder="e.g. Midnight Strikers" />
         </div>
+        {adminClubs.length > 0 && (
+          <div>
+            <Label className="mb-1 block text-xs text-muted-foreground">Register as club (optional)</Label>
+            <select
+              name="club_id"
+              defaultValue=""
+              className="h-9 w-full rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1f9d57]"
+            >
+              <option value="">Just my team — no club</option>
+              {adminClubs.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-[#9a978d]">
+              Link this entry to your club so a win lands in its trophy cabinet.
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="mb-1 block text-xs text-muted-foreground">Captain / contact</Label>
