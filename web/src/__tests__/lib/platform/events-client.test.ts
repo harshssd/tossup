@@ -80,6 +80,7 @@ describe('setRsvp', () => {
     await setRsvp('e1', 'GOING')
     const upsertArgs = args('event_rsvps', 'upsert')
     expect(upsertArgs?.[0]).toMatchObject({ event_id: 'e1', user_id: 'u1', status: 'GOING' })
+    expect(upsertArgs?.[0]).toHaveProperty('updated_at')
     expect(upsertArgs?.[1]).toEqual({ onConflict: 'event_id,user_id' })
   })
 

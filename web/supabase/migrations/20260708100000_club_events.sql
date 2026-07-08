@@ -29,6 +29,8 @@ CREATE TABLE public.event_rsvps (
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (event_id, user_id)
 );
+-- PK leads on event_id; index user_id for the self-RLS policies + "my RSVPs".
+CREATE INDEX event_rsvps_user_idx ON public.event_rsvps (user_id);
 
 -- Any-role club membership check (is_scope_admin only covers OWNER/ADMIN). Used
 -- by RLS so a PRIVATE club's members can see + RSVP to their own events.
@@ -39,6 +41,12 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
     WHERE m.club_id = p_club AND pp.user_id = p_user
   );
 $$;
+-- Only authenticated RLS predicates call this; keep anon from probing it as a
+-- membership oracle. Supabase grants EXECUTE to anon directly (not only via
+-- PUBLIC), so revoke from both. RLS still evaluates it (policies run as the
+-- authenticated caller, which keeps EXECUTE).
+REVOKE EXECUTE ON FUNCTION public.is_club_member(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_club_member(uuid, uuid) TO authenticated;
 
 ALTER TABLE public.club_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_rsvps ENABLE ROW LEVEL SECURITY;

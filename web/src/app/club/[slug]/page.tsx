@@ -141,7 +141,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             <CalendarDays className="h-5 w-5 text-[#1f9d57]" /> Upcoming events
             {events.length > 0 && <span className="text-[#9a978d]">({events.length})</span>}
           </h2>
-          <UpcomingEvents events={events} />
+          <UpcomingEvents events={events} slug={slug} />
           {events.length === 0 && canManage && (
             <Link
               href={`/club/${club.slug}/manage`}

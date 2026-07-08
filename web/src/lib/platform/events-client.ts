@@ -16,9 +16,11 @@ export interface NewEvent {
   description?: string | null
 }
 
-/** Authed read for the manage screen (sees a PRIVATE club's events + past ones). */
+/** Authed read for the manage screen (sees a PRIVATE club's events + past ones).
+ *  Counts come from the raw RSVP rows so PRIVATE clubs — excluded from the public
+ *  counts view — still show real attendance. */
 export function loadClubEventsAdmin(clubId: string): Promise<EventWithCounts[]> {
-  return readClubEvents(createPlatformBrowserClient(), clubId, { upcoming: false })
+  return readClubEvents(createPlatformBrowserClient(), clubId, { upcoming: false, countsFromRsvps: true })
 }
 
 /** Create an event. Admin-only via RLS (created_by must be the caller). */

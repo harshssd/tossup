@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { EVENT_TYPE_LABEL, type EventWithCounts, type RsvpStatus } from '@/lib/platform/events'
+import { EVENT_TYPE_LABEL, goingDelta, type EventWithCounts, type RsvpStatus } from '@/lib/platform/events'
 import { clearRsvp, getMyRsvps, setRsvp } from '@/lib/platform/events-client'
 
 const TYPE_DOT: Record<string, string> = {
@@ -30,15 +30,17 @@ function whenLabel(startsAt: string, endsAt: string | null) {
 /** Public upcoming-events list with an inline RSVP control. Signed-out users are
  *  routed to sign-in on their first RSVP. Renders nothing when there are no
  *  events (the caller shows the empty state). */
-export function UpcomingEvents({ events }: { events: EventWithCounts[] }) {
+export function UpcomingEvents({ events, slug }: { events: EventWithCounts[]; slug: string }) {
   const router = useRouter()
   const [mine, setMine] = useState<Record<string, RsvpStatus>>({})
-  const [going, setGoing] = useState<Record<string, number>>(
-    Object.fromEntries(events.map((e) => [e.id, e.going]))
-  )
+  const [going, setGoing] = useState<Record<string, number>>({})
   const [pending, setPending] = useState<string | null>(null)
 
+  // Re-seed from props whenever the event set changes. On App Router soft-nav
+  // this component is reused (not remounted), so a useState initializer would
+  // keep the previous club's counts; syncing here keeps `going` correct.
   useEffect(() => {
+    setGoing(Object.fromEntries(events.map((e) => [e.id, e.going])))
     let cancelled = false
     getMyRsvps(events.map((e) => e.id)).then((r) => {
       if (!cancelled) setMine(r)
@@ -56,17 +58,17 @@ export function UpcomingEvents({ events }: { events: EventWithCounts[] }) {
     if (prev === status) return onClear(eventId, prev)
     // Optimistic: adjust the GOING tally for this event.
     setMine((m) => ({ ...m, [eventId]: status }))
-    setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) + (status === 'GOING' ? 1 : 0) - (prev === 'GOING' ? 1 : 0) }))
+    setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) + goingDelta(prev, status) }))
     setPending(eventId)
     try {
       await setRsvp(eventId, status)
     } catch (err) {
-      // Revert, then route signed-out users to sign in.
+      // Revert (goingDelta is antisymmetric), then route signed-out users to sign in.
       setMine((m) => ({ ...m, [eventId]: prev }))
-      setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) - (status === 'GOING' ? 1 : 0) + (prev === 'GOING' ? 1 : 0) }))
+      setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) + goingDelta(status, prev) }))
       const msg = (err as Error).message
       toast.error(msg)
-      if (/sign in/i.test(msg)) router.push('/account/sign-in')
+      if (/sign in/i.test(msg)) router.push(`/account/sign-in?redirect=/club/${slug}`)
     } finally {
       setPending(null)
     }
@@ -79,7 +81,7 @@ export function UpcomingEvents({ events }: { events: EventWithCounts[] }) {
       delete n[eventId]
       return n
     })
-    setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) - (prev === 'GOING' ? 1 : 0) }))
+    setGoing((g) => ({ ...g, [eventId]: (g[eventId] ?? 0) + goingDelta(prev, undefined) }))
     setPending(eventId)
     try {
       await clearRsvp(eventId)
@@ -132,6 +134,7 @@ export function UpcomingEvents({ events }: { events: EventWithCounts[] }) {
                   size="sm"
                   variant={my === 'GOING' ? 'default' : 'outline'}
                   disabled={pending === e.id}
+                  aria-pressed={my === 'GOING'}
                   className={my === 'GOING' ? 'bg-[#1f9d57] text-white hover:bg-[#0f5a30]' : ''}
                   onClick={() => onRsvp(e.id, 'GOING')}
                 >
@@ -141,6 +144,7 @@ export function UpcomingEvents({ events }: { events: EventWithCounts[] }) {
                   size="sm"
                   variant={my === 'MAYBE' ? 'default' : 'outline'}
                   disabled={pending === e.id}
+                  aria-pressed={my === 'MAYBE'}
                   className={my === 'MAYBE' ? 'bg-[#c99a1e] text-white hover:bg-[#a37f18]' : ''}
                   onClick={() => onRsvp(e.id, 'MAYBE')}
                 >
