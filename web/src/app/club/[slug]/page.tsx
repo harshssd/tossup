@@ -173,9 +173,10 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             {events.length > 0 && (
               <a
                 href={`/api/clubs/${club.id}/events.ics`}
+                aria-label="Download upcoming events as a calendar file (.ics)"
                 className="flex items-center gap-1.5 text-xs font-semibold text-[#0f5a30] hover:underline"
               >
-                <CalendarPlus className="h-4 w-4" /> Add to calendar
+                <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Add to calendar
               </a>
             )}
           </div>

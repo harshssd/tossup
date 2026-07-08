@@ -77,7 +77,7 @@ describe('buildClubCalendar', () => {
     expect(ics).toContain('END:VEVENT')
   })
 
-  it('emits DTSTART/DTEND/SUMMARY/UID and a club URL', () => {
+  it('emits DTSTART/DTEND/SUMMARY/UID and a club URL from a trusted base', () => {
     const ics = buildClubCalendar(club, [makeEvent()], 'https://tossup.app')
     expect(ics).toContain('DTSTART:20260710T180000Z')
     expect(ics).toContain('DTEND:20260710T200000Z')
@@ -85,6 +85,33 @@ describe('buildClubCalendar', () => {
     expect(ics).toContain('UID:club-event-e1@tossup.app')
     expect(ics).toContain('URL:https://tossup.app/club/oval-cc')
     expect(ics).toContain('CATEGORIES:PRACTICE')
+  })
+
+  it('emits DTSTAMP from updated_at, then created_at, then starts_at', () => {
+    expect(buildClubCalendar(club, [makeEvent()], '')).toContain('DTSTAMP:20260702T000000Z') // updated_at
+    expect(buildClubCalendar(club, [makeEvent({ updated_at: '' })], '')).toContain('DTSTAMP:20260701T000000Z') // created_at
+    expect(buildClubCalendar(club, [makeEvent({ updated_at: '', created_at: '' })], '')).toContain(
+      'DTSTAMP:20260710T180000Z' // starts_at
+    )
+  })
+
+  it('adds refresh hints so subscribing clients re-poll', () => {
+    const ics = buildClubCalendar(club, [makeEvent()], '')
+    expect(ics).toContain('X-PUBLISHED-TTL:PT1H')
+    expect(ics).toContain('REFRESH-INTERVAL;VALUE=DURATION:PT1H')
+  })
+
+  it('encodes the slug in the club URL (no property injection via slug)', () => {
+    const ics = buildClubCalendar({ name: 'X', slug: 'a b/c' }, [makeEvent()], 'https://tossup.app')
+    expect(ics).toContain('URL:https://tossup.app/club/a%20b%2Fc')
+  })
+
+  it('escapes an embedded newline as literal \\n without breaking the property line', () => {
+    const ics = buildClubCalendar(club, [makeEvent({ title: 'a\nb', description: 'line1\nline2' })], '')
+    expect(ics).toContain('SUMMARY:a\\nb')
+    expect(ics).toContain('DESCRIPTION:line1\\nline2')
+    // No raw newline splits a VEVENT property (only folded continuations start with a space).
+    for (const l of ics.split('\r\n')) expect(/^(SUMMARY|DESCRIPTION):/.test(l) || !l.includes('line2')).toBe(true)
   })
 
   it('defaults a 2h block when ends_at is null', () => {
@@ -114,9 +141,9 @@ describe('buildClubCalendar', () => {
     expect(none).not.toContain('BEGIN:VEVENT')
   })
 
-  it('falls back to a stable UID host and no URL when origin is empty', () => {
+  it('falls back to a stable UID host and no URL when no trusted base is given', () => {
     const ics = buildClubCalendar(club, [makeEvent()], '')
-    expect(ics).toContain('UID:club-event-e1@tossup')
+    expect(ics).toContain('UID:club-event-e1@tossup.app')
     expect(ics).not.toContain('URL:')
   })
 })
