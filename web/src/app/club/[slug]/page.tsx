@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, Globe, Mail, UserPlus, CalendarDays } from 'lucide-react'
+import { MapPin, Globe, Mail, UserPlus, CalendarDays, Trophy } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
+import { getClubHonors } from '@/lib/platform/honors'
 import { formatPlace } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
@@ -43,9 +45,10 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   const club = await getClubBySlug(slug)
   if (!club) notFound()
 
-  const [members, { data: tournaments }] = await Promise.all([
+  const [members, { data: tournaments }, honors] = await Promise.all([
     countClubMembers(club.id),
     platformDb.from('leagues').select('id,name,registration_status,start_date').eq('club_id', club.id).eq('visibility', 'PUBLIC').limit(20),
+    getClubHonors(club.id),
   ])
 
   const canManage = await isServerScopeAdmin('club', club.id)
@@ -127,6 +130,16 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             )}
           </CardContent>
         </Card>
+      )}
+
+      <TrophyCabinet honors={honors} />
+      {honors.length === 0 && canManage && (
+        <Link
+          href={`/club/${club.slug}/manage`}
+          className="mt-8 flex items-center gap-2 rounded-2xl border border-dashed border-[#d8d4c8] px-4 py-3 text-sm font-semibold text-[#0f5a30] hover:border-[#1f9d57]"
+        >
+          <Trophy className="h-4 w-4" /> Add your club&apos;s first trophy →
+        </Link>
       )}
 
       <h2 className="mt-8 text-lg font-semibold">Tournaments</h2>

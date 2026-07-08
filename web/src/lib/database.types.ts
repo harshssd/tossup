@@ -194,6 +194,23 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["tournament_post_replies"]["Row"]>
         Relationships: []
       }
+      honors: {
+        Row: {
+          id: string; club_id: string; team_id: string | null; league_id: string | null
+          title: string; result: string; year: number | null; season_label: string | null
+          captain_person_id: string | null; notes: string | null; photo_url: string | null
+          source: string; created_by: string | null; created_at: string; updated_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["honors"]["Row"]> & { club_id: string; title: string }
+        Update: Partial<Database["public"]["Tables"]["honors"]["Row"]>
+        Relationships: []
+      }
+      honor_squad_members: {
+        Row: { honor_id: string; person_id: string; role_label: string | null }
+        Insert: Partial<Database["public"]["Tables"]["honor_squad_members"]["Row"]> & { honor_id: string; person_id: string }
+        Update: Partial<Database["public"]["Tables"]["honor_squad_members"]["Row"]>
+        Relationships: []
+      }
     }
     Views: {
       tournament_standings: {
@@ -212,6 +229,14 @@ export type Database = {
       add_club_member: { Args: { p_club_id: string; p_display_name: string; p_role?: string }; Returns: string }
       link_member_to_user: { Args: { p_person_id: string; p_email: string }; Returns: undefined }
       merge_persons: { Args: { p_loser: string; p_winner: string }; Returns: undefined }
+      create_honor: {
+        Args: {
+          p_club_id: string; p_title: string; p_result?: string; p_year?: number | null
+          p_season_label?: string | null; p_captain_person_id?: string | null
+          p_notes?: string | null; p_photo_url?: string | null; p_squad?: string[]
+        }
+        Returns: string
+      }
     }
     Enums: {
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"
