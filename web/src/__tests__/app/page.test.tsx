@@ -76,7 +76,7 @@ describe('Home Page (platform landing)', () => {
     it('should point the primary CTAs at platform routes', () => {
       render(<Home />)
 
-      expect(screen.getByRole('link', { name: /discover clubs/i })).toHaveAttribute('href', '/discover')
+      expect(screen.getByRole('link', { name: /find your club/i })).toHaveAttribute('href', '/start')
       expect(screen.getAllByRole('link', { name: /host a tournament/i })[0]).toHaveAttribute(
         'href',
         '/tournaments/new'
