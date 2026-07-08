@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, Mail, Phone, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,8 +8,28 @@ import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
 import { roleLabel, type Tier } from '@/lib/platform/recognition'
 import { getPlayer } from '@/lib/platform/queries'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { ShareButton } from '@/components/platform/ShareButton'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const player = await getPlayer(id)
+  if (!player || player.merged_into_id) return { title: 'Player — TossUp' }
+
+  const place = [player.city, player.region, player.country].filter(Boolean).join(', ')
+  const title = `${player.display_name} — Cricket Player on TossUp`
+  const description = [roleLabel(player.primary_role), place, player.looking_for_club ? 'looking for a club' : null]
+    .filter(Boolean)
+    .join(' · ')
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'profile' },
+    twitter: { card: 'summary', title, description },
+  }
+}
 
 export default async function PlayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -34,6 +55,14 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           </div>
           <RecognitionBadge tier={player.recognition_tier as Tier} size="md" />
         </div>
+        <ShareButton
+          className="mt-5"
+          title={`${player.display_name} — Cricket Player on TossUp`}
+          text={[player.display_name, roleLabel(player.primary_role), player.looking_for_club ? 'looking for a club' : null]
+            .filter(Boolean)
+            .join(' · ')}
+          path={`/player/${player.id}`}
+        />
       </div>
 
       {player.looking_for_club && (

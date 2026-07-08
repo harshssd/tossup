@@ -1,4 +1,5 @@
 import type { Fixture } from '@/lib/platform/queries'
+import { ShareButton } from './ShareButton'
 
 const STATUS: Record<string, { label: string; cls: string; live?: boolean }> = {
   LIVE: { label: 'Live', cls: 'bg-[#fdeee4] text-[#c0431a]', live: true },
@@ -28,9 +29,24 @@ export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?
         <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9a978d]">
           {fx.round_label || (fx.match_number ? `Match ${fx.match_number}` : 'Match')}
         </span>
-        <span className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${st.cls}`}>
-          {st.live && <span className="cy-pulse h-1.5 w-1.5 rounded-full bg-[#c0431a]" />}
-          {st.label}
+        <span className="flex items-center gap-1">
+          <span className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${st.cls}`}>
+            {st.live && <span className="cy-pulse h-1.5 w-1.5 rounded-full bg-[#c0431a]" />}
+            {st.label}
+          </span>
+          {fx.status === 'COMPLETED' && (
+            <ShareButton
+              variant="icon"
+              title={`${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'} — result on TossUp`}
+              text={[
+                `${fx.team_a_name ?? 'TBD'} ${aScore ?? ''} vs ${fx.team_b_name ?? 'TBD'} ${bScore ?? ''}`.replace(/\s+/g, ' ').trim(),
+                fx.result_note,
+              ]
+                .filter(Boolean)
+                .join(' — ')}
+              path={`/tournaments/${fx.league_id}`}
+            />
+          )}
         </span>
       </div>
       <div className="space-y-2">

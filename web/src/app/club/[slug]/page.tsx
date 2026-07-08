@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, Globe, Mail, UserPlus, CalendarDays } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,8 +12,30 @@ import { platformDb } from '@/lib/platform/db'
 import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { ShareButton } from '@/components/platform/ShareButton'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const club = await getClubBySlug(slug)
+  if (!club) return { title: 'Club not found — TossUp' }
+
+  const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
+  const title = `${club.name} — Cricket Club on TossUp`
+  const description =
+    club.description ||
+    [`Cricket club${place ? ` in ${place}` : ''}`, club.is_recruiting ? 'recruiting players' : null]
+      .filter(Boolean)
+      .join(' · ') + ' — on TossUp, the home of grassroots cricket.'
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
+  }
+}
 
 export default async function ClubProfile({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -48,6 +71,12 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
           </div>
           <RecognitionBadge tier={club.recognition_tier as Tier} size="md" />
         </div>
+        <ShareButton
+          className="mt-5"
+          title={`${club.name} — Cricket Club on TossUp`}
+          text={[`${club.name} on TossUp`, place, club.is_recruiting ? 'recruiting players' : null].filter(Boolean).join(' · ')}
+          path={`/club/${club.slug}`}
+        />
         {canManage && (
           <Link href={`/club/${club.slug}/manage`} className="mt-5 inline-block">
             <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
