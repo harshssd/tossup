@@ -38,6 +38,10 @@ export interface PlayerHonor {
 
 const RESULT_RANK: Record<string, number> = { CHAMPION: 0, RUNNER_UP: 1, THIRD: 2, SPECIAL: 3 }
 
+// Cap reads: these run on anon-rendered, force-dynamic public pages, so an
+// outlier club/player can't turn one request into an unbounded fetch.
+const MAX_HONORS = 500
+
 /** Resolve a set of person ids to a display-name map (PUBLIC profiles only). */
 async function nameMap(db: Db, ids: string[]): Promise<Map<string, string>> {
   const names = new Map<string, string>()
@@ -56,6 +60,7 @@ export async function readClubHonors(db: Db, clubId: string): Promise<HonorView[
     .eq('club_id', clubId)
     .order('year', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
+    .limit(MAX_HONORS)
   if (!honors?.length) return []
 
   const ids = honors.map((h) => h.id)
@@ -93,8 +98,8 @@ export function getClubHonors(clubId: string): Promise<HonorView[]> {
 /** Honors a person earned — as captain or squad member — for their profile ribbon. */
 export async function getPlayerHonors(personId: string): Promise<PlayerHonor[]> {
   const [asCaptain, inSquad] = await Promise.all([
-    platformDb.from('honors').select('*').eq('captain_person_id', personId),
-    platformDb.from('honor_squad_members').select('honor_id').eq('person_id', personId),
+    platformDb.from('honors').select('*').eq('captain_person_id', personId).limit(MAX_HONORS),
+    platformDb.from('honor_squad_members').select('honor_id').eq('person_id', personId).limit(MAX_HONORS),
   ])
 
   const captainHonors = asCaptain.data ?? []

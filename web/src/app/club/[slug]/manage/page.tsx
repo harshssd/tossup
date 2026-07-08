@@ -428,7 +428,7 @@ function HonorForm({
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-3 border-t border-[#efece4] pt-4">
       <div className="flex flex-wrap gap-2">
-        <Input name="title" placeholder="Title, e.g. Bay Area Premier League" className="h-9 w-64" />
+        <Input name="title" aria-label="Honour title" placeholder="Title, e.g. Bay Area Premier League" className="h-9 w-64" />
         <select name="result" className={`${selCls} h-9`} defaultValue="CHAMPION" aria-label="Result">
           <option value="CHAMPION">Champions</option>
           <option value="RUNNER_UP">Runners-up</option>
@@ -482,7 +482,17 @@ function HonorForm({
         <Button type="submit" size="sm" disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
           {saving ? 'Saving…' : 'Add honour'}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            // The form fields reset on remount, but the squad Set is component
+            // state that would otherwise persist selected chips into the next open.
+            setSquad(new Set())
+            setOpen(false)
+          }}
+        >
           Cancel
         </Button>
       </div>

@@ -9,11 +9,19 @@ import type { Database } from '@/lib/database.types'
 
 type Row = Record<string, unknown>
 let queues: Record<string, Row[][]>
+// Records every filter call so tests can assert the right column was queried,
+// not just that the queue order happened to line up.
+let calls: Array<{ table: string; method: string; args: unknown[] }>
 
 jest.mock('@/lib/platform/db', () => {
   const build = (table: string) => {
     const b: Record<string, unknown> = {}
-    for (const m of ['select', 'eq', 'in', 'order']) b[m] = () => b
+    for (const m of ['select', 'eq', 'in', 'order', 'limit']) {
+      b[m] = (...args: unknown[]) => {
+        calls.push({ table, method: m, args })
+        return b
+      }
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     b.then = (resolve: (v: any) => void) => resolve({ data: (queues[table] ?? []).shift() ?? [] })
     return b
@@ -23,7 +31,11 @@ jest.mock('@/lib/platform/db', () => {
 
 beforeEach(() => {
   queues = {}
+  calls = []
 })
+
+const filtered = (table: string, method: string) =>
+  calls.filter((c) => c.table === table && c.method === method).map((c) => c.args[0])
 
 describe('getPlayerHonors', () => {
   it('dedupes captain+squad honors and sorts by year desc then result rank', async () => {
@@ -54,6 +66,11 @@ describe('getPlayerHonors', () => {
     expect(h2.asCaptain).toBe(false)
     expect(h1.clubName).toBe('Alpha')
     expect(h1.clubSlug).toBe('alpha')
+
+    // The two person-scoped queries must filter the correct columns, not just
+    // return the right queue entry — captaincy on honors, membership on squad.
+    expect(filtered('honors', 'eq')).toContain('captain_person_id')
+    expect(filtered('honor_squad_members', 'eq')).toContain('person_id')
   })
 
   it('returns empty when the person has no honors', async () => {
