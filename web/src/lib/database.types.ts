@@ -174,6 +174,8 @@ export type Database = {
           requires_ack: boolean; ack_count: number
           created_at: string; updated_at: string
         }
+        // Exactly one of league_id / club_id must be set (DB CHECK tournament_posts_one_scope);
+        // callers set the right scope (createPost → league_id, createClubAnnouncement → club_id).
         Insert: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]> & { body: string }
         Update: Partial<Database["public"]["Tables"]["tournament_posts"]["Row"]>
         Relationships: []

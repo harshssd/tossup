@@ -20,6 +20,7 @@ const selCls = 'h-9 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-sm
 /** Club announcements admin surface: composer + the shared feed with pin/delete. */
 export function ClubAnnouncementsManager({ clubId }: { clubId: string }) {
   const [posts, setPosts] = useState<Post[]>([])
+  const [loaded, setLoaded] = useState(false)
   const [now] = useState(() => Date.now())
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -30,6 +31,8 @@ export function ClubAnnouncementsManager({ clubId }: { clubId: string }) {
       setPosts(await loadClubPostsAdmin(clubId))
     } catch (err) {
       toast.error((err as Error).message)
+    } finally {
+      setLoaded(true)
     }
   }, [clubId])
 
@@ -96,7 +99,9 @@ export function ClubAnnouncementsManager({ clubId }: { clubId: string }) {
 
   return (
     <div>
-      {posts.length === 0 && <p className="mt-3 py-2 text-sm text-[#9a978d]">No announcements yet — post your first below.</p>}
+      {loaded && posts.length === 0 && (
+        <p className="mt-3 py-2 text-sm text-[#9a978d]">No announcements yet — post your first below.</p>
+      )}
       <ClubAnnouncements posts={posts} now={now} admin={{ pendingId, onTogglePin, onDelete }} />
 
       {!open ? (

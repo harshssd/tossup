@@ -36,6 +36,11 @@ CREATE POLICY "anon_write_del" ON public.tournament_post_replies FOR DELETE TO a
   USING (EXISTS (SELECT 1 FROM public.tournament_posts p WHERE p.id = post_id AND p.club_id IS NULL));
 
 -- Club post reads: public for PUBLIC clubs; members + admins for their own (incl. PRIVATE).
+DROP POLICY IF EXISTS "posts_club_public_read" ON public.tournament_posts;
+DROP POLICY IF EXISTS "posts_club_member_read" ON public.tournament_posts;
+DROP POLICY IF EXISTS "posts_club_admin_ins" ON public.tournament_posts;
+DROP POLICY IF EXISTS "posts_club_admin_upd" ON public.tournament_posts;
+DROP POLICY IF EXISTS "posts_club_admin_del" ON public.tournament_posts;
 CREATE POLICY "posts_club_public_read" ON public.tournament_posts
   FOR SELECT TO anon, authenticated
   USING (club_id IS NOT NULL AND EXISTS (

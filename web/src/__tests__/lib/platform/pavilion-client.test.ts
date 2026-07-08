@@ -4,6 +4,7 @@ import {
   deleteClubPost,
   loadClubPostsAdmin,
 } from '@/lib/platform/pavilion-client'
+import { listClubPosts } from '@/lib/platform/pavilion'
 
 // pavilion-client wraps the authed browser client. Mock it to assert the club
 // post column mapping + admin ops without a network.
@@ -124,5 +125,34 @@ describe('loadClubPostsAdmin', () => {
     expect(posts).toEqual([{ id: 'p1' }])
     // read the club-scoped board (never platformDb)
     expect(calls.some((c) => c.table === 'tournament_posts' && c.method === 'eq' && c.args[0] === 'club_id')).toBe(true)
+  })
+})
+
+describe('listClubPosts sticky-merge', () => {
+  // A hand-rolled db whose two queries (recent, then sticky) resolve, in call
+  // order, to the queued page results. Exercises the reason for the two-query
+  // design: a pinned post outside the recent-200 window must still be merged in.
+  function makeDb(pages: { data: unknown[] }[]) {
+    let i = 0
+    return {
+      from() {
+        const b: Record<string, unknown> = {}
+        for (const m of ['select', 'eq', 'order', 'limit']) b[m] = () => b
+        const page = pages
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        b.then = (resolve: (v: any) => void) => resolve({ data: page[i++]?.data ?? [], error: null })
+        return b
+      },
+    }
+  }
+
+  it('merges a pinned post outside the recent window, deduped by id', async () => {
+    const db = makeDb([
+      { data: [{ id: 'a' }, { id: 'b' }] }, // recent 200 (no pinned 'z')
+      { data: [{ id: 'z' }, { id: 'b' }] }, // sticky pinned rows ('z' is old, 'b' overlaps)
+    ])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const posts = await listClubPosts('c1', db as any)
+    expect(posts.map((p) => p.id).sort()).toEqual(['a', 'b', 'z']) // union, 'b' not duplicated
   })
 })

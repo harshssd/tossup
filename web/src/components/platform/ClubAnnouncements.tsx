@@ -59,6 +59,7 @@ export function ClubAnnouncements({
                 <Button
                   size="sm"
                   variant="outline"
+                  aria-pressed={p.is_pinned}
                   disabled={admin.pendingId === p.id}
                   onClick={() => admin.onTogglePin(p)}
                 >
