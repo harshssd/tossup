@@ -75,6 +75,26 @@ export async function hostSaveFixtureResult(id: string, patch: Partial<Fixture>)
   if (error) throw new Error(error.message)
 }
 
+/** Conclude a tournament: record champion (+ optional runner-up) and mint
+ *  TOSSUP_VERIFIED honors into the winning clubs' cabinets. Host-only (RPC
+ *  self-checks is_scope_admin). Re-callable — it rewrites verified honors.
+ *  Returns the number of verified honors written (0 if no winning team belongs
+ *  to a club that registered on TossUp). */
+export async function concludeTournament(
+  leagueId: string,
+  championTeamId: string,
+  runnerUpTeamId?: string | null
+): Promise<number> {
+  const supabase = createPlatformBrowserClient()
+  const { data, error } = await supabase.rpc('conclude_tournament', {
+    p_league_id: leagueId,
+    p_champion_team_id: championTeamId,
+    p_runner_up_team_id: runnerUpTeamId ?? undefined,
+  })
+  if (error) throw new Error(error.message)
+  return (data as number) ?? 0
+}
+
 /** Read a tournament as the authenticated admin. Mirrors queries.getTournament
  *  but uses the authed client so the admin-read RLS admits non-public
  *  tournaments too (the anon read path only sees PUBLIC ones). */
@@ -95,6 +115,27 @@ export async function getHostTournament(id: string): Promise<{
 }
 
 // ---- Team registration ----
+
+export interface MyAdminClub {
+  id: string
+  name: string
+  slug: string
+}
+
+/** Clubs the signed-in user administers — the "register as your club" options.
+ *  A registration tagged with one of these club_ids is the club's opt-in, which
+ *  later lets conclude_tournament mint a verified honor into its cabinet. */
+export async function getMyAdminClubs(): Promise<MyAdminClub[]> {
+  const supabase = createPlatformBrowserClient()
+  const { data, error } = await supabase.rpc('list_my_admin_clubs')
+  if (error) {
+    // Degrade to empty (never block the register form) but leave a breadcrumb
+    // so a real misconfig isn't invisible as "the club picker never appears".
+    console.warn('getMyAdminClubs:', error.message)
+    return []
+  }
+  return (data ?? []) as MyAdminClub[]
+}
 
 export interface RegisterTeamInput {
   league_id: string

@@ -49,6 +49,7 @@ export type Database = {
           reputation_score: number
           points_win: number; points_tie: number; points_loss: number; points_noresult: number
           standings: Json; settings: Json; created_at: string; updated_at: string
+          champion_team_id: string | null; runner_up_team_id: string | null; concluded_at: string | null
         }
         Insert: Partial<Database["public"]["Tables"]["leagues"]["Row"]> & { name: string }
         Update: Partial<Database["public"]["Tables"]["leagues"]["Row"]>
@@ -236,6 +237,11 @@ export type Database = {
           p_notes?: string | null; p_photo_url?: string | null; p_squad?: string[]
         }
         Returns: string
+      }
+      list_my_admin_clubs: { Args: Record<string, never>; Returns: { id: string; name: string; slug: string }[] }
+      conclude_tournament: {
+        Args: { p_league_id: string; p_champion_team_id: string; p_runner_up_team_id?: string | null }
+        Returns: number
       }
     }
     Enums: {
