@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, Globe, Mail, UserPlus, CalendarDays, Trophy } from 'lucide-react'
+import { MapPin, Globe, Mail, UserPlus, CalendarDays, Trophy, Megaphone } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -15,8 +15,10 @@ import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
 import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
 import { UpcomingEvents } from '@/components/platform/UpcomingEvents'
+import { ClubAnnouncements } from '@/components/platform/ClubAnnouncements'
 import { getClubHonors } from '@/lib/platform/honors'
 import { getClubEvents } from '@/lib/platform/events'
+import { listClubPosts, rankAnnouncements } from '@/lib/platform/pavilion'
 import { formatPlace } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
@@ -47,14 +49,22 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   const club = await getClubBySlug(slug)
   if (!club) notFound()
 
-  const [members, { data: tournaments }, honors, events] = await Promise.all([
+  const [members, { data: tournaments }, honors, events, announcements] = await Promise.all([
     countClubMembers(club.id),
     platformDb.from('leagues').select('id,name,registration_status,start_date').eq('club_id', club.id).eq('visibility', 'PUBLIC').limit(20),
     getClubHonors(club.id),
     getClubEvents(club.id),
+    listClubPosts(club.id),
   ])
 
   const canManage = await isServerScopeAdmin('club', club.id)
+  // Server component renders once (no client re-render), so this is stable.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now()
+  // Rank once here so the section header, count, feed, and empty-state CTA agree
+  // on what's actually visible (ClubAnnouncements filters expired/non-announcement).
+  const { pinned: pinnedAnn, feed: feedAnn } = rankAnnouncements(announcements, now)
+  const visibleAnnouncements = pinnedAnn.length + feedAnn.length
   const place = formatPlace(club, club.location)
   const socials = (club.social_links ?? {}) as Record<string, string>
 
@@ -133,6 +143,24 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             )}
           </CardContent>
         </Card>
+      )}
+
+      {(visibleAnnouncements > 0 || canManage) && (
+        <section className="mt-8">
+          <h2 className="cy-display flex items-center gap-2 text-lg font-semibold text-[#16150f]">
+            <Megaphone className="h-5 w-5 text-[#1f9d57]" /> Announcements
+            {visibleAnnouncements > 0 && <span className="text-[#9a978d]">({visibleAnnouncements})</span>}
+          </h2>
+          <ClubAnnouncements posts={announcements} now={now} />
+          {visibleAnnouncements === 0 && canManage && (
+            <Link
+              href={`/club/${club.slug}/manage`}
+              className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-[#d8d4c8] px-4 py-3 text-sm font-semibold text-[#0f5a30] hover:border-[#1f9d57]"
+            >
+              <Megaphone className="h-4 w-4" /> Post your club&apos;s first announcement →
+            </Link>
+          )}
+        </section>
       )}
 
       {(events.length > 0 || canManage) && (

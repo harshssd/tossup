@@ -26,6 +26,7 @@ import { createHonor, deleteHonor, loadClubHonors, rejectVerifiedHonor } from '@
 import type { HonorResult, HonorView } from '@/lib/platform/honors'
 import { createEvent, deleteEvent, loadClubEventsAdmin } from '@/lib/platform/events-client'
 import { EVENT_TYPE_LABEL, type EventType, type EventWithCounts } from '@/lib/platform/events'
+import { ClubAnnouncementsManager } from '@/components/platform/ClubAnnouncementsManager'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
 // Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
@@ -347,6 +348,15 @@ export default function ManageClubPage() {
           <p className="mt-2 text-xs text-[#9a978d]">
             Use Link to connect a member to their account — once linked, you can promote them to Admin.
           </p>
+        </section>
+
+        {/* Announcements */}
+        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">Announcements</h2>
+          <p className="mt-1 text-sm text-[#6f6c63]">
+            Post news to your members. Announcements show on your club page, pinned + priority-ranked.
+          </p>
+          {club && <ClubAnnouncementsManager clubId={club.id} />}
         </section>
 
         {/* Events */}

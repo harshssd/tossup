@@ -118,22 +118,41 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
 }
 
 // ---------------- Queries ----------------
+
+/** Merge a board's "recent 200" page with its small "sticky" query and dedupe by
+ *  id. Both the league (tournament) and club boards fetch this way: on a busy
+ *  board (>200 posts) a pinned notice / open flag could be older than the newest
+ *  200 and silently fall off — the worst failure for a comms hub — so the sticky
+ *  query guarantees those rows are always present. Keeping the merge in one place
+ *  means that invariant can't drift between the two boards. */
+function mergePostPages(...pages: ({ data: Post[] | null })[]): Post[] {
+  const byId = new Map<string, Post>()
+  for (const page of pages) for (const p of page.data ?? []) byId.set(p.id, p)
+  return [...byId.values()]
+}
+
 export async function listPosts(leagueId: string): Promise<Post[]> {
-  // The 200 most recent posts PLUS every pinned / OPEN-flag row. On a busy
-  // tournament (>200 posts) a host's pinned notice or an unresolved flag could
-  // be older than the newest 200 and silently fall off the board — the worst
-  // failure for a comms hub. The sticky query (pinned OR open flag) is small
-  // and guarantees they're always present; we merge and dedupe by id.
+  // Recent page + sticky (pinned OR an unresolved OPEN flag).
   const [recent, sticky] = await Promise.all([
     platformDb.from('tournament_posts').select('*').eq('league_id', leagueId).order('created_at', { ascending: false }).limit(200),
     platformDb.from('tournament_posts').select('*').eq('league_id', leagueId).or('is_pinned.eq.true,status.eq.OPEN'),
   ])
   if (recent.error) console.error('listPosts (recent):', recent.error.message)
   if (sticky.error) console.error('listPosts (sticky):', sticky.error.message)
-  const byId = new Map<string, Post>()
-  for (const p of recent.data ?? []) byId.set(p.id, p)
-  for (const p of sticky.data ?? []) byId.set(p.id, p)
-  return [...byId.values()]
+  return mergePostPages(recent, sticky)
+}
+
+/** Club Pavilion (v1 = announcements). Same sticky-merge as listPosts but scoped
+ *  to a club. `db` picks trust level: anon platformDb for the public page (PUBLIC
+ *  clubs), an authed client on manage (sees a PRIVATE club's board). */
+export async function listClubPosts(clubId: string, db = platformDb): Promise<Post[]> {
+  const [recent, sticky] = await Promise.all([
+    db.from('tournament_posts').select('*').eq('club_id', clubId).order('created_at', { ascending: false }).limit(200),
+    db.from('tournament_posts').select('*').eq('club_id', clubId).eq('is_pinned', true),
+  ])
+  if (recent.error) console.error('listClubPosts (recent):', recent.error.message)
+  if (sticky.error) console.error('listClubPosts (sticky):', sticky.error.message)
+  return mergePostPages(recent, sticky)
 }
 
 export async function listReplies(postId: string): Promise<PostReply[]> {
