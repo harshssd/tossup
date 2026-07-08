@@ -16,6 +16,8 @@ import { ShareButton } from '@/components/platform/ShareButton'
 import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
 import { UpcomingEvents } from '@/components/platform/UpcomingEvents'
 import { ClubAnnouncements } from '@/components/platform/ClubAnnouncements'
+import { JoinClubButton } from '@/components/platform/JoinClubButton'
+import { getViewerJoinState } from '@/lib/platform/club-join'
 import { getClubHonors } from '@/lib/platform/honors'
 import { getClubEvents } from '@/lib/platform/events'
 import { listClubPosts, rankAnnouncements } from '@/lib/platform/pavilion'
@@ -58,6 +60,9 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   ])
 
   const canManage = await isServerScopeAdmin('club', club.id)
+  const isPublicClub = club.visibility === 'PUBLIC' || club.visibility === null
+  // Admins don't request to join their own club; skip the extra reads for them.
+  const joinState = !canManage && isPublicClub ? await getViewerJoinState(club.id) : null
   // Server component renders once (no client re-render), so this is stable.
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now()
@@ -100,6 +105,15 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
               <Settings className="h-4 w-4" /> Manage roster
             </Button>
           </Link>
+        )}
+        {joinState && (
+          <JoinClubButton
+            clubId={club.id}
+            slug={club.slug ?? slug}
+            signedIn={joinState.signedIn}
+            isMember={joinState.isMember}
+            requestStatus={joinState.requestStatus}
+          />
         )}
       </div>
 

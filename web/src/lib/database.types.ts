@@ -119,6 +119,16 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["club_memberships"]["Row"]>
         Relationships: []
       }
+      club_join_requests: {
+        Row: {
+          id: string; club_id: string; user_id: string; person_id: string | null
+          message: string | null; status: 'PENDING' | 'APPROVED' | 'REJECTED'
+          decided_by: string | null; decided_at: string | null; created_at: string; updated_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["club_join_requests"]["Row"]> & { club_id: string; user_id: string }
+        Update: Partial<Database["public"]["Tables"]["club_join_requests"]["Row"]>
+        Relationships: []
+      }
       team_memberships: {
         Row: { id: string; person_id: string; team_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
         Insert: Partial<Database["public"]["Tables"]["team_memberships"]["Row"]> & { person_id: string; team_id: string }
@@ -273,6 +283,11 @@ export type Database = {
       reject_tournament_honor: { Args: { p_honor_id: string }; Returns: undefined }
       allow_tournament_honors: { Args: { p_club_id: string; p_league_id: string }; Returns: undefined }
       is_club_member: { Args: { p_user: string; p_club: string }; Returns: boolean }
+      decide_club_join_request: { Args: { p_request_id: string; p_approve: boolean }; Returns: undefined }
+      list_club_join_requests: {
+        Args: { p_club_id: string }
+        Returns: { id: string; user_id: string; requester_name: string; message: string | null; created_at: string }[]
+      }
     }
     Enums: {
       event_type: "PRACTICE" | "MATCH" | "SOCIAL" | "OTHER"
