@@ -35,6 +35,22 @@ export async function createOwnedTournament(input: Partial<League> & { name: str
   return league as League
 }
 
+/** Start a club-scoped internal league (a PRIVATE tournament pinned to the club).
+ *  Reuses the whole tournament spine — teams, fixtures, results, standings — via
+ *  createOwnedTournament. RLS requires the creator to admin the club. */
+export function createInternalLeague(
+  clubId: string,
+  input: { name: string; format?: string | null; type?: string }
+): Promise<League> {
+  return createOwnedTournament({
+    name: input.name,
+    type: input.type ?? 'LEAGUE',
+    format: input.format ?? null,
+    club_id: clubId,
+    visibility: 'PRIVATE',
+  })
+}
+
 /** Whether the current viewer is signed in and administers this tournament. */
 export async function getTournamentAdminState(leagueId: string): Promise<{ signedIn: boolean; isAdmin: boolean }> {
   const supabase = createPlatformBrowserClient()

@@ -11,14 +11,17 @@ import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import {
   addClubMember,
   getClubAdminState,
+  getClubLeagues,
   getClubRoster,
   linkMemberToUser,
   mergeMembers,
   removeClubMember,
   setClubMemberRole,
+  type ClubLeague,
   type ClubRole,
   type RosterMember,
 } from '@/lib/platform/club-admin'
+import { createInternalLeague } from '@/lib/platform/tournament-host'
 import { createHonor, deleteHonor, loadClubHonors, rejectVerifiedHonor } from '@/lib/platform/honors-client'
 import type { HonorResult, HonorView } from '@/lib/platform/honors'
 import { createEvent, deleteEvent, loadClubEventsAdmin } from '@/lib/platform/events-client'
@@ -80,6 +83,7 @@ export default function ManageClubPage() {
   const [honors, setHonors] = useState<HonorView[]>([])
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [events, setEvents] = useState<EventWithCounts[]>([])
+  const [leagues, setLeagues] = useState<ClubLeague[]>([])
 
   const loadRoster = useCallback(async () => {
     if (!club) return
@@ -108,13 +112,23 @@ export default function ManageClubPage() {
     }
   }, [club])
 
+  const loadLeagues = useCallback(async () => {
+    if (!club) return
+    try {
+      setLeagues(await getClubLeagues(club.id))
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }, [club])
+
   useEffect(() => {
     if (access === 'ok') {
       loadRoster()
       loadHonors()
       loadEvents()
+      loadLeagues()
     }
-  }, [access, loadRoster, loadHonors, loadEvents])
+  }, [access, loadRoster, loadHonors, loadEvents, loadLeagues])
 
   async function onDeleteEvent(id: string, title: string) {
     if (!confirm(`Delete "${title}"? This also removes its RSVPs.`)) return
@@ -365,6 +379,38 @@ export default function ManageClubPage() {
             ))}
           </div>
           {club && <EventForm clubId={club.id} onSaved={loadEvents} />}
+        </section>
+
+        {/* Internal leagues */}
+        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">
+            Internal leagues <span className="text-[#9a978d]">({leagues.length})</span>
+          </h2>
+          <p className="mt-1 text-sm text-[#6f6c63]">
+            Run a members-only league or a practice-match ladder. Reuses the full tournament tools —
+            teams, fixtures, results, and standings.
+          </p>
+          <div className="mt-3 divide-y divide-[#efece4]">
+            {leagues.length === 0 && <p className="py-2 text-sm text-[#9a978d]">No leagues yet — start one below.</p>}
+            {leagues.map((l) => (
+              <div key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#16150f]">
+                    {l.name}{' '}
+                    <span className="font-normal text-[#9a978d]">
+                      {[l.visibility === 'PRIVATE' ? 'Internal' : 'Public', l.concluded_at ? 'Concluded' : l.registration_status]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </p>
+                </div>
+                <Link href={`/tournaments/${l.id}/manage`}>
+                  <Button size="sm" variant="outline">Manage →</Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+          {club && <InternalLeagueForm clubId={club.id} />}
         </section>
 
         {/* Honours */}
@@ -671,6 +717,63 @@ function EventForm({ clubId, onSaved }: { clubId: string; onSaved: () => Promise
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
           {saving ? 'Saving…' : 'Add event'}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function InternalLeagueForm({ clubId }: { clubId: string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const name = String(f.get('name') || '').trim()
+    if (!name) {
+      toast.error('Name is required')
+      return
+    }
+    setSaving(true)
+    try {
+      const league = await createInternalLeague(clubId, {
+        name,
+        format: String(f.get('format') || '').trim() || null,
+      })
+      toast.success('Internal league created')
+      // Straight into the full tournament tools to add teams + fixtures.
+      router.push(`/tournaments/${league.id}/manage`)
+    } catch (err) {
+      toast.error((err as Error).message)
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" className="mt-4" onClick={() => setOpen(true)}>
+        + Start an internal league
+      </Button>
+    )
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-4 space-y-3 border-t border-[#efece4] pt-4">
+      <div className="flex flex-wrap gap-2">
+        <Input name="name" aria-label="League name" placeholder="Name, e.g. Winter Net League" className="h-9 w-64" />
+        <Input name="format" aria-label="Format" placeholder="Format, e.g. T20 (optional)" className="h-9 w-48" />
+      </div>
+      <p className="text-xs text-[#9a978d]">
+        Created as a private, members-only league you can publish later.
+      </p>
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+          {saving ? 'Creating…' : 'Create league'}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
           Cancel

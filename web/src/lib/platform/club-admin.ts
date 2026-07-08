@@ -140,3 +140,26 @@ export async function linkMemberToUser(personId: string, email: string): Promise
   const { error } = await supabase.rpc('link_member_to_user', { p_person_id: personId, p_email: email })
   if (error) throw new Error(error.message)
 }
+
+export interface ClubLeague {
+  id: string
+  name: string
+  visibility: 'PUBLIC' | 'PRIVATE'
+  registration_status: string
+  start_date: string | null
+  concluded_at: string | null
+}
+
+/** A club's leagues (public + PRIVATE internal ones), newest first. Club admins
+ *  read PRIVATE rows via leagues_club_admin_read. */
+export async function getClubLeagues(clubId: string): Promise<ClubLeague[]> {
+  const supabase = createPlatformBrowserClient()
+  const { data, error } = await supabase
+    .from('leagues')
+    .select('id, name, visibility, registration_status, start_date, concluded_at')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ClubLeague[]
+}
