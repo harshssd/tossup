@@ -243,6 +243,8 @@ export type Database = {
         Args: { p_league_id: string; p_champion_team_id: string; p_runner_up_team_id?: string | null }
         Returns: number
       }
+      reject_tournament_honor: { Args: { p_honor_id: string }; Returns: undefined }
+      allow_tournament_honors: { Args: { p_club_id: string; p_league_id: string }; Returns: undefined }
     }
     Enums: {
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"

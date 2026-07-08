@@ -48,3 +48,13 @@ export async function deleteHonor(honorId: string): Promise<void> {
   const { error } = await supabase.from('honors').delete().eq('id', honorId)
   if (error) throw new Error(error.message)
 }
+
+/** Reject a TOSSUP_VERIFIED honor: removes it AND blocks that tournament from
+ *  re-minting it (a plain delete wouldn't stick — conclude re-mints). Use for a
+ *  verified honor that isn't the club's, or whose title is wrong/abusive.
+ *  Club-admin-only via the SECURITY DEFINER function. */
+export async function rejectVerifiedHonor(honorId: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.rpc('reject_tournament_honor', { p_honor_id: honorId })
+  if (error) throw new Error(error.message)
+}
