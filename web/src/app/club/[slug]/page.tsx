@@ -14,7 +14,9 @@ import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
 import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
+import { UpcomingEvents } from '@/components/platform/UpcomingEvents'
 import { getClubHonors } from '@/lib/platform/honors'
+import { getClubEvents } from '@/lib/platform/events'
 import { formatPlace } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
@@ -45,10 +47,11 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   const club = await getClubBySlug(slug)
   if (!club) notFound()
 
-  const [members, { data: tournaments }, honors] = await Promise.all([
+  const [members, { data: tournaments }, honors, events] = await Promise.all([
     countClubMembers(club.id),
     platformDb.from('leagues').select('id,name,registration_status,start_date').eq('club_id', club.id).eq('visibility', 'PUBLIC').limit(20),
     getClubHonors(club.id),
+    getClubEvents(club.id),
   ])
 
   const canManage = await isServerScopeAdmin('club', club.id)
@@ -130,6 +133,24 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             )}
           </CardContent>
         </Card>
+      )}
+
+      {(events.length > 0 || canManage) && (
+        <section className="mt-8">
+          <h2 className="cy-display flex items-center gap-2 text-lg font-semibold text-[#16150f]">
+            <CalendarDays className="h-5 w-5 text-[#1f9d57]" /> Upcoming events
+            {events.length > 0 && <span className="text-[#9a978d]">({events.length})</span>}
+          </h2>
+          <UpcomingEvents events={events} slug={slug} />
+          {events.length === 0 && canManage && (
+            <Link
+              href={`/club/${club.slug}/manage`}
+              className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-[#d8d4c8] px-4 py-3 text-sm font-semibold text-[#0f5a30] hover:border-[#1f9d57]"
+            >
+              <CalendarDays className="h-4 w-4" /> Schedule your club&apos;s first practice or match →
+            </Link>
+          )}
+        </section>
       )}
 
       <TrophyCabinet honors={honors} />

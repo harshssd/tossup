@@ -212,8 +212,33 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["honor_squad_members"]["Row"]>
         Relationships: []
       }
+      club_events: {
+        Row: {
+          id: string; club_id: string; title: string; description: string | null
+          event_type: Database["public"]["Enums"]["event_type"]
+          location: string | null; starts_at: string; ends_at: string | null
+          created_by: string | null; created_at: string; updated_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["club_events"]["Row"]> & { club_id: string; title: string; starts_at: string }
+        Update: Partial<Database["public"]["Tables"]["club_events"]["Row"]>
+        Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          event_id: string; user_id: string
+          status: Database["public"]["Enums"]["rsvp_status"]
+          created_at: string; updated_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["event_rsvps"]["Row"]> & { event_id: string; user_id: string; status: Database["public"]["Enums"]["rsvp_status"] }
+        Update: Partial<Database["public"]["Tables"]["event_rsvps"]["Row"]>
+        Relationships: []
+      }
     }
     Views: {
+      club_event_rsvp_counts: {
+        Row: { event_id: string | null; going: number | null; maybe: number | null }
+        Relationships: []
+      }
       tournament_standings: {
         Row: {
           league_id: string | null; team_id: string | null; name: string | null
@@ -245,8 +270,11 @@ export type Database = {
       }
       reject_tournament_honor: { Args: { p_honor_id: string }; Returns: undefined }
       allow_tournament_honors: { Args: { p_club_id: string; p_league_id: string }; Returns: undefined }
+      is_club_member: { Args: { p_user: string; p_club: string }; Returns: boolean }
     }
     Enums: {
+      event_type: "PRACTICE" | "MATCH" | "SOCIAL" | "OTHER"
+      rsvp_status: "GOING" | "MAYBE" | "NOT_GOING"
       organization_role: "OWNER" | "ADMIN" | "MODERATOR" | "MEMBER"
       recognition_tier: "OFFICIAL" | "AFFILIATED" | "COMMUNITY" | "UNVERIFIED"
       visibility: "PUBLIC" | "PRIVATE"
