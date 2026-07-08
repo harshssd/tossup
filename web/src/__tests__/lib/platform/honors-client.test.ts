@@ -1,4 +1,4 @@
-import { createHonor, deleteHonor } from '@/lib/platform/honors-client'
+import { createHonor, deleteHonor, rejectVerifiedHonor } from '@/lib/platform/honors-client'
 
 // honors-client wraps the authed browser client. Mock it so we can assert the
 // param-name mapping (p_* keys) and the delete/error handling without a network.
@@ -88,5 +88,18 @@ describe('deleteHonor', () => {
   it('throws when the delete is blocked', async () => {
     eq.mockResolvedValue({ error: { message: 'denied' } })
     await expect(deleteHonor('honor-123')).rejects.toThrow('denied')
+  })
+})
+
+describe('rejectVerifiedHonor', () => {
+  it('calls the reject rpc with the honor id', async () => {
+    rpc.mockResolvedValue({ error: null })
+    await rejectVerifiedHonor('honor-123')
+    expect(rpc).toHaveBeenCalledWith('reject_tournament_honor', { p_honor_id: 'honor-123' })
+  })
+
+  it('throws the rpc error message', async () => {
+    rpc.mockResolvedValue({ error: { message: 'only a club admin can reject its honors' } })
+    await expect(rejectVerifiedHonor('honor-123')).rejects.toThrow('only a club admin can reject its honors')
   })
 })

@@ -19,7 +19,7 @@ import {
   type ClubRole,
   type RosterMember,
 } from '@/lib/platform/club-admin'
-import { createHonor, deleteHonor, loadClubHonors } from '@/lib/platform/honors-client'
+import { createHonor, deleteHonor, loadClubHonors, rejectVerifiedHonor } from '@/lib/platform/honors-client'
 import type { HonorResult, HonorView } from '@/lib/platform/honors'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
@@ -107,6 +107,22 @@ export default function ManageClubPage() {
     try {
       await deleteHonor(id)
       toast.success('Honour removed')
+      await loadHonors()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onRejectHonor(id: string, title: string) {
+    if (
+      !confirm(
+        `Reject the verified honour "${title}"? This removes it and stops that tournament from adding it back. Use this if it isn't your club's or the title is wrong.`
+      )
+    )
+      return
+    try {
+      await rejectVerifiedHonor(id)
+      toast.success('Verified honour rejected')
       await loadHonors()
     } catch (err) {
       toast.error((err as Error).message)
@@ -308,6 +324,11 @@ export default function ManageClubPage() {
                     <span className="font-normal text-[#9a978d]">
                       {[RESULT_LABEL[h.result] ?? h.result, h.season_label || h.year].filter(Boolean).join(' · ')}
                     </span>
+                    {h.source === 'TOSSUP_VERIFIED' && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-[#e7f4ec] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0f5a30] align-middle">
+                        Verified
+                      </span>
+                    )}
                   </p>
                   {(h.captainName || h.squad.length > 0) && (
                     <p className="mt-0.5 text-xs text-[#6f6c63]">
@@ -317,9 +338,15 @@ export default function ManageClubPage() {
                     </p>
                   )}
                 </div>
-                <Button size="sm" variant="outline" aria-label={`Remove ${h.title}`} onClick={() => onDeleteHonor(h.id, h.title)}>
-                  Remove
-                </Button>
+                {h.source === 'TOSSUP_VERIFIED' ? (
+                  <Button size="sm" variant="outline" aria-label={`Reject ${h.title}`} onClick={() => onRejectHonor(h.id, h.title)}>
+                    Not us
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" aria-label={`Remove ${h.title}`} onClick={() => onDeleteHonor(h.id, h.title)}>
+                    Remove
+                  </Button>
+                )}
               </div>
             ))}
           </div>
