@@ -136,6 +136,22 @@ export async function listPosts(leagueId: string): Promise<Post[]> {
   return [...byId.values()]
 }
 
+/** Club Pavilion (v1 = announcements). Same sticky-merge as listPosts but scoped
+ *  to a club. `db` picks trust level: anon platformDb for the public page (PUBLIC
+ *  clubs), an authed client on manage (sees a PRIVATE club's board). */
+export async function listClubPosts(clubId: string, db = platformDb): Promise<Post[]> {
+  const [recent, sticky] = await Promise.all([
+    db.from('tournament_posts').select('*').eq('club_id', clubId).order('created_at', { ascending: false }).limit(200),
+    db.from('tournament_posts').select('*').eq('club_id', clubId).eq('is_pinned', true),
+  ])
+  if (recent.error) console.error('listClubPosts (recent):', recent.error.message)
+  if (sticky.error) console.error('listClubPosts (sticky):', sticky.error.message)
+  const byId = new Map<string, Post>()
+  for (const p of recent.data ?? []) byId.set(p.id, p)
+  for (const p of sticky.data ?? []) byId.set(p.id, p)
+  return [...byId.values()]
+}
+
 export async function listReplies(postId: string): Promise<PostReply[]> {
   const { data, error } = await platformDb
     .from('tournament_post_replies')
