@@ -27,6 +27,7 @@ import type { HonorResult, HonorView } from '@/lib/platform/honors'
 import { createEvent, deleteEvent, loadClubEventsAdmin } from '@/lib/platform/events-client'
 import { EVENT_TYPE_LABEL, type EventType, type EventWithCounts } from '@/lib/platform/events'
 import { ClubAnnouncementsManager } from '@/components/platform/ClubAnnouncementsManager'
+import { JoinRequestsManager } from '@/components/platform/JoinRequestsManager'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
 // Promoting an account-less Person to ADMIN/OWNER fails the admin-must-be-user
@@ -294,6 +295,13 @@ export default function ManageClubPage() {
           ← {club?.name}
         </Link>
         <h1 className="cy-display mt-2 text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage roster</h1>
+
+        {/* Join requests */}
+        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">Join requests</h2>
+          <p className="mt-1 text-sm text-[#6f6c63]">People asking to join your club. Approving adds them as a member.</p>
+          {club && <JoinRequestsManager clubId={club.id} />}
+        </section>
 
         <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">
