@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, Globe, Mail, UserPlus, CalendarDays, Trophy, Megaphone } from 'lucide-react'
+import { MapPin, Globe, Mail, UserPlus, CalendarDays, CalendarPlus, Trophy, Megaphone } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -165,10 +165,21 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
 
       {(events.length > 0 || canManage) && (
         <section className="mt-8">
-          <h2 className="cy-display flex items-center gap-2 text-lg font-semibold text-[#16150f]">
-            <CalendarDays className="h-5 w-5 text-[#1f9d57]" /> Upcoming events
-            {events.length > 0 && <span className="text-[#9a978d]">({events.length})</span>}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="cy-display flex items-center gap-2 text-lg font-semibold text-[#16150f]">
+              <CalendarDays className="h-5 w-5 text-[#1f9d57]" /> Upcoming events
+              {events.length > 0 && <span className="text-[#9a978d]">({events.length})</span>}
+            </h2>
+            {events.length > 0 && (
+              <a
+                href={`/api/clubs/${club.id}/events.ics`}
+                aria-label="Download upcoming events as a calendar file (.ics)"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#0f5a30] hover:underline"
+              >
+                <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Add to calendar
+              </a>
+            )}
+          </div>
           <UpcomingEvents events={events} slug={slug} />
           {events.length === 0 && canManage && (
             <Link
