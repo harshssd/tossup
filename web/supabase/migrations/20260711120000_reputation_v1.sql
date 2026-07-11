@@ -110,21 +110,22 @@ BEGIN
       + (c.latitude IS NOT NULL)::int ) AS completeness
     FROM public.clubs c
   ), scored AS (
-    SELECT id, members, events_held, honors, fixtures_completed, completeness,
-      (2*members + 3*events_held + 10*honors + 2*fixtures_completed + 3*completeness) AS score
+    SELECT id,
+      (2*members + 3*events_held + 10*honors + 2*fixtures_completed + 3*completeness) AS score,
+      jsonb_build_object(
+        'members', members, 'events_held', events_held, 'honors', honors,
+        'fixtures_completed', fixtures_completed, 'completeness', completeness
+      ) AS signals_core
     FROM stats
   )
   UPDATE public.clubs c SET
     reputation_score = s.score,
-    reputation_signals = jsonb_build_object(
-      'members', s.members, 'events_held', s.events_held, 'honors', s.honors,
-      'fixtures_completed', s.fixtures_completed, 'completeness', s.completeness,
-      'computed_at', now()
-    )
+    reputation_signals = s.signals_core || jsonb_build_object('computed_at', now())
   FROM scored s
   WHERE c.id = s.id
-    AND (c.reputation_score IS DISTINCT FROM s.score
-         OR NOT (COALESCE(c.reputation_signals, '{}'::jsonb) ? 'computed_at'));
+    -- Refresh when any signal component changed (also covers score changes and
+    -- first run), even if the weighted score nets to the same total.
+    AND (COALESCE(c.reputation_signals, '{}'::jsonb) - 'computed_at') IS DISTINCT FROM s.signals_core;
 
   -- Players: memberships·2 + honors·8 + captaincies·4 + completeness·3
   WITH pstats AS (
@@ -138,24 +139,25 @@ BEGIN
       + (p.primary_role IS NOT NULL)::int
       + (p.photo IS NOT NULL AND p.photo <> '')::int
       + (p.availability IS NOT NULL AND p.availability <> '')::int
-      + ((p.batting_style IS NOT NULL) OR (p.bowling_style IS NOT NULL))::int ) AS completeness
+      + ( (p.batting_style IS NOT NULL AND p.batting_style <> '')
+         OR (p.bowling_style IS NOT NULL AND p.bowling_style <> '') )::int ) AS completeness
     FROM public.player_profiles p
     WHERE p.merged_into_id IS NULL
   ), pscored AS (
-    SELECT id, memberships, honors, captaincies, completeness,
-      (2*memberships + 8*honors + 4*captaincies + 3*completeness) AS score
+    SELECT id,
+      (2*memberships + 8*honors + 4*captaincies + 3*completeness) AS score,
+      jsonb_build_object(
+        'memberships', memberships, 'honors', honors, 'captaincies', captaincies,
+        'completeness', completeness
+      ) AS signals_core
     FROM pstats
   )
   UPDATE public.player_profiles p SET
     reputation_score = s.score,
-    reputation_signals = jsonb_build_object(
-      'memberships', s.memberships, 'honors', s.honors, 'captaincies', s.captaincies,
-      'completeness', s.completeness, 'computed_at', now()
-    )
+    reputation_signals = s.signals_core || jsonb_build_object('computed_at', now())
   FROM pscored s
   WHERE p.id = s.id
-    AND (p.reputation_score IS DISTINCT FROM s.score
-         OR NOT (COALESCE(p.reputation_signals, '{}'::jsonb) ? 'computed_at'));
+    AND (COALESCE(p.reputation_signals, '{}'::jsonb) - 'computed_at') IS DISTINCT FROM s.signals_core;
 END;
 $$;
 
