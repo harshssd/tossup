@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MapPin, Globe, Mail, UserPlus, CalendarDays, CalendarPlus, Trophy, Megaphone } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -72,6 +73,9 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   const visibleAnnouncements = pinnedAnn.length + feedAnn.length
   const place = formatPlace(club, club.location)
   const socials = (club.social_links ?? {}) as Record<string, string>
+  // Re-validate the hex before it touches an inline style (the DB CHECK already
+  // enforces it; this is defence-in-depth against any stale/bad value).
+  const accent = club.accent_color && /^#[0-9a-fA-F]{6}$/.test(club.accent_color) ? club.accent_color : null
 
   return (
     <PlatformShell>
@@ -80,16 +84,33 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
         ← Discover
       </Link>
 
-      <div className="cy-hero mt-5 overflow-hidden rounded-3xl border border-[#e7e4db] p-6 sm:p-8">
+      <div className="cy-hero mt-5 overflow-hidden rounded-3xl border border-[#e7e4db]">
+        {accent && <div style={{ height: 4, backgroundColor: accent }} />}
+        {club.cover_url && (
+          <div className="relative h-40 w-full sm:h-52">
+            <Image src={club.cover_url} alt={`${club.name} cover`} fill sizes="(max-width: 768px) 100vw, 768px" className="object-cover" unoptimized />
+          </div>
+        )}
+        <div className="p-6 sm:p-8">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="cy-display text-4xl font-semibold text-[#16150f] sm:text-5xl">{club.name}</h1>
-            {place && (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-[#3a382f]">
-                <MapPin className="h-4 w-4" /> {place}
-              </p>
+          <div className="flex items-start gap-4">
+            {club.crest_url && (
+              <div
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 bg-white ${club.cover_url ? '-mt-14' : ''}`}
+                style={{ borderColor: accent ?? '#e7e4db' }}
+              >
+                <Image src={club.crest_url} alt={`${club.name} crest`} fill sizes="64px" className="object-cover" unoptimized />
+              </div>
             )}
-            <p className="mt-2 text-xs text-[#6f6c63]">{TIER_META[club.recognition_tier as Tier]?.blurb}</p>
+            <div>
+              <h1 className="cy-display text-4xl font-semibold text-[#16150f] sm:text-5xl">{club.name}</h1>
+              {place && (
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-[#3a382f]">
+                  <MapPin className="h-4 w-4" /> {place}
+                </p>
+              )}
+              <p className="mt-2 text-xs text-[#6f6c63]">{TIER_META[club.recognition_tier as Tier]?.blurb}</p>
+            </div>
           </div>
           <RecognitionBadge tier={club.recognition_tier as Tier} size="md" />
         </div>
@@ -115,6 +136,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
             requestStatus={joinState.requestStatus}
           />
         )}
+        </div>
       </div>
 
       {club.description && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{club.description}</p>}

@@ -27,6 +27,7 @@ export type Database = {
           verified_at: string | null; verified_by: string | null; verification_source: string | null
           reputation_score: number; reputation_signals: Json
           is_recruiting: boolean; roles_needed: string[]; founded_year: number | null
+          crest_url: string | null; cover_url: string | null; accent_color: string | null
           created_at: string; updated_at: string
         }
         Insert: Partial<Database["public"]["Tables"]["clubs"]["Row"]> & { name: string }
