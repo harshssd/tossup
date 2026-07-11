@@ -1,5 +1,7 @@
 import type { Fixture } from '@/lib/platform/queries'
 import { ShareButton } from './ShareButton'
+import { ShareImageButton } from './ShareImageButton'
+import { fixtureCardImagePath, shareCardFilename, formatCricketScore } from '@/lib/platform/share'
 
 const STATUS: Record<string, { label: string; cls: string; live?: boolean }> = {
   LIVE: { label: 'Live', cls: 'bg-[#fdeee4] text-[#c0431a]', live: true },
@@ -8,17 +10,20 @@ const STATUS: Record<string, { label: string; cls: string; live?: boolean }> = {
   ABANDONED: { label: 'Abandoned', cls: 'bg-[#efede6] text-[#6f6c63]' },
 }
 
-function score(r: number | null, w: number | null, o: number | null) {
-  if (r == null) return null
-  return `${r}/${w ?? 0}${o != null ? ` (${o})` : ''}`
-}
-
 export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?: number }) {
   const st = STATUS[fx.status] ?? STATUS.SCHEDULED
   const aWin = fx.winner_team_id && fx.winner_team_id === fx.team_a_id
   const bWin = fx.winner_team_id && fx.winner_team_id === fx.team_b_id
-  const aScore = score(fx.team_a_runs, fx.team_a_wickets, fx.team_a_overs)
-  const bScore = score(fx.team_b_runs, fx.team_b_wickets, fx.team_b_overs)
+  const aScore = formatCricketScore(fx.team_a_runs, fx.team_a_wickets, fx.team_a_overs)
+  const bScore = formatCricketScore(fx.team_b_runs, fx.team_b_wickets, fx.team_b_overs)
+
+  const shareTitle = `${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'} — result on TossUp`
+  const shareText = [
+    `${fx.team_a_name ?? 'TBD'} ${aScore ?? ''} vs ${fx.team_b_name ?? 'TBD'} ${bScore ?? ''}`.replace(/\s+/g, ' ').trim(),
+    fx.result_note,
+  ]
+    .filter(Boolean)
+    .join(' — ')
 
   return (
     <div
@@ -35,17 +40,16 @@ export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?
             {st.label}
           </span>
           {fx.status === 'COMPLETED' && (
-            <ShareButton
-              variant="icon"
-              title={`${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'} — result on TossUp`}
-              text={[
-                `${fx.team_a_name ?? 'TBD'} ${aScore ?? ''} vs ${fx.team_b_name ?? 'TBD'} ${bScore ?? ''}`.replace(/\s+/g, ' ').trim(),
-                fx.result_note,
-              ]
-                .filter(Boolean)
-                .join(' — ')}
-              path={`/tournaments/${fx.league_id}`}
-            />
+            <>
+              <ShareImageButton
+                variant="icon"
+                imagePath={fixtureCardImagePath(fx.id)}
+                filename={shareCardFilename(fx.team_a_name, fx.team_b_name)}
+                title={shareTitle}
+                text={shareText}
+              />
+              <ShareButton variant="icon" title={shareTitle} text={shareText} path={`/tournaments/${fx.league_id}`} />
+            </>
           )}
         </span>
       </div>

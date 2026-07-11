@@ -120,6 +120,22 @@ export async function getTournament(id: string): Promise<{
   return { league, teams: teams ?? [], fixtures: fixtures ?? [], standings: standings ?? [] }
 }
 
+/** Fetch a single fixture + its tournament's name/tier for the shareable result
+ *  card. Anon read: fixtures/leagues RLS returns nothing for private tournaments,
+ *  so this resolves to null (the card route then 404s). */
+export async function getFixtureForCard(
+  id: string
+): Promise<{ fixture: Fixture; league: Pick<League, 'name' | 'recognition_tier'> | null } | null> {
+  const { data: fixture } = await platformDb.from('fixtures').select('*').eq('id', id).maybeSingle()
+  if (!fixture) return null
+  const { data: league } = await platformDb
+    .from('leagues')
+    .select('name, recognition_tier')
+    .eq('id', fixture.league_id)
+    .maybeSingle()
+  return { fixture, league }
+}
+
 // ---------------- Mutations (anon writes until auth lands) ----------------
 // Club create moved to lib/platform/club-admin.ts (createOwnedClub) — after the
 // Phase 5 RLS, clubs INSERT must run as the authenticated owner, so the anon
