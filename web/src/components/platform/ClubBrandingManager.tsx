@@ -100,7 +100,7 @@ export function ClubBrandingManager({ clubId }: { clubId: string }) {
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7e4db] bg-[#f6f5f1]">
           {branding.crest_url ? (
-            <Image src={branding.crest_url} alt="Club crest" width={64} height={64} className="h-full w-full object-cover" unoptimized />
+            <Image src={branding.crest_url} alt="Club crest" width={64} height={64} className="h-full w-full object-contain p-0.5" unoptimized />
           ) : (
             <ImagePlus className="h-5 w-5 text-[#b8b3a6]" />
           )}
@@ -110,7 +110,16 @@ export function ClubBrandingManager({ clubId }: { clubId: string }) {
           <div className="mt-1 flex items-center gap-2">
             <input ref={crestInput} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile('crest', e)} />
             <Button size="sm" variant="outline" disabled={busy === 'crest'} onClick={() => crestInput.current?.click()}>
-              {busy === 'crest' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : branding.crest_url ? 'Replace' : 'Upload'}
+              {busy === 'crest' ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  <span className="sr-only">Uploading crest</span>
+                </>
+              ) : branding.crest_url ? (
+                'Replace'
+              ) : (
+                'Upload'
+              )}
             </Button>
             {branding.crest_url && (
               <Button size="sm" variant="outline" disabled={busy === 'crest'} onClick={() => onRemove('crest')}>
@@ -134,7 +143,16 @@ export function ClubBrandingManager({ clubId }: { clubId: string }) {
         <div className="mt-2 flex items-center gap-2">
           <input ref={coverInput} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile('cover', e)} />
           <Button size="sm" variant="outline" disabled={busy === 'cover'} onClick={() => coverInput.current?.click()}>
-            {busy === 'cover' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : branding.cover_url ? 'Replace' : 'Upload'}
+            {busy === 'cover' ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                <span className="sr-only">Uploading cover</span>
+              </>
+            ) : branding.cover_url ? (
+              'Replace'
+            ) : (
+              'Upload'
+            )}
           </Button>
           {branding.cover_url && (
             <Button size="sm" variant="outline" disabled={busy === 'cover'} onClick={() => onRemove('cover')}>

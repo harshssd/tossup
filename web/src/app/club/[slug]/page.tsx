@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
 import { TIER_META, roleLabel, type Tier } from '@/lib/platform/recognition'
 import { getClubBySlug, countClubMembers } from '@/lib/platform/queries'
+import { isValidHexColor } from '@/lib/platform/club-branding'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { platformDb } from '@/lib/platform/db'
 import { Button } from '@/components/ui/button'
@@ -75,7 +76,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
   const socials = (club.social_links ?? {}) as Record<string, string>
   // Re-validate the hex before it touches an inline style (the DB CHECK already
   // enforces it; this is defence-in-depth against any stale/bad value).
-  const accent = club.accent_color && /^#[0-9a-fA-F]{6}$/.test(club.accent_color) ? club.accent_color : null
+  const accent = club.accent_color && isValidHexColor(club.accent_color) ? club.accent_color : null
 
   return (
     <PlatformShell>
@@ -99,7 +100,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
                 className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 bg-white ${club.cover_url ? '-mt-14' : ''}`}
                 style={{ borderColor: accent ?? '#e7e4db' }}
               >
-                <Image src={club.crest_url} alt={`${club.name} crest`} fill sizes="64px" className="object-cover" unoptimized />
+                <Image src={club.crest_url} alt={`${club.name} crest`} fill sizes="64px" className="object-contain p-0.5" unoptimized />
               </div>
             )}
             <div>
