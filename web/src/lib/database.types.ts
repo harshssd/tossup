@@ -99,7 +99,7 @@ export type Database = {
           contact_email: string | null; contact_phone: string | null; current_club_id: string | null
           visibility: Database["public"]["Enums"]["visibility"]
           recognition_tier: Database["public"]["Enums"]["recognition_tier"]
-          reputation_score: number; external_links: Json
+          reputation_score: number; reputation_signals: Json | null; external_links: Json
           merged_into_id: string | null
           created_at: string; updated_at: string
         }
