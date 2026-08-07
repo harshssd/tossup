@@ -58,12 +58,23 @@ const nextConfig: NextConfig = {
 
   // Redirects for production
   async redirects() {
+    // Phase F: retire the legacy auction-era community/dashboard surfaces (on the
+    // legacy Supabase project) in favour of the platform equivalents. Temporary
+    // (307/308-false) while the consolidation settles — promote to permanent once
+    // stable. Redirects run BEFORE middleware, so these fire even for the
+    // otherwise auth-gated /dashboard.
     return [
-      {
-        source: '/admin',
-        destination: '/dashboard',
-        permanent: false,
-      },
+      { source: '/explore', destination: '/discover', permanent: false },
+      // Legacy club deep-links live in a DIFFERENT database (different slug space),
+      // so they can't map 1:1 — send them to the platform club index.
+      { source: '/explore/club/:slug*', destination: '/discover?tab=clubs', permanent: false },
+      { source: '/clubs/create', destination: '/club/new', permanent: false },
+      { source: '/clubs/:path*', destination: '/discover?tab=clubs', permanent: false },
+      { source: '/leagues/create', destination: '/tournaments/new', permanent: false },
+      { source: '/leagues/:path*', destination: '/tournaments', permanent: false },
+      { source: '/dashboard', destination: '/home', permanent: false },
+      // /admin previously pointed at the now-retired /dashboard.
+      { source: '/admin', destination: '/home', permanent: false },
     ];
   },
 

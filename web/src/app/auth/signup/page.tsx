@@ -75,7 +75,7 @@ export default function SignUpPage() {
         setSuccess('Please check your email for a verification link before signing in.')
       } else if (data.session) {
         toast.success('Account created successfully!')
-        router.push('/dashboard')
+        router.push('/home')
       }
     } catch (error) {
       console.error('Sign up error:', error)

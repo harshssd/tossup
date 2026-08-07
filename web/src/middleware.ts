@@ -73,11 +73,13 @@ function isPublicRoute(pathname: string): boolean {
     '/forgot-password',
     '/reset-password',
     '/live',
-    '/explore',
     '/tournament',
     // Platform (community/discovery) public surfaces. Trailing slashes on
     // /club/ and /player/ avoid exposing the legacy /clubs dashboard route.
     '/discover',
+    // The follows feed renders a signed-out gate (never redirect it to sign-in);
+    // it's also the retirement target for the legacy /dashboard.
+    '/home',
     '/club/',
     '/player/',
     // The embeddable club widget is anonymous (iframed on third-party sites) —

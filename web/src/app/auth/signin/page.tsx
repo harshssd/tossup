@@ -47,7 +47,7 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('Welcome back!')
-        router.push('/dashboard')
+        router.push('/home')
       }
     } catch (error) {
       console.error('Sign in error:', error)

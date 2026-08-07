@@ -105,10 +105,10 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
       <header className="border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/explore">
+            <Link href="/discover">
               <Button variant="ghost" size="sm" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Explore
+                Discover
               </Button>
             </Link>
           </div>
