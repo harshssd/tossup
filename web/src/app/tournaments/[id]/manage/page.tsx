@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { AuctionNightCard } from '@/components/platform/AuctionNightCard'
 import {
   approveRegistration,
   concludeTournament,
@@ -311,6 +312,9 @@ export default function ManageTournamentPage() {
 
       {/* Conclude → verified honors */}
       <ConcludeSection league={league} teams={teams} standings={standings} onDone={load} />
+
+      {/* Optional add-on: player auction night (hand-off to the separate auction tool) */}
+      <AuctionNightCard />
     </div>
     </PlatformShell>
   )
