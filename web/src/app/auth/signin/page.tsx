@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { postAuthDestination } from '@/lib/auth-redirect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,7 +48,9 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('Welcome back!')
-        router.push('/dashboard')
+        // Honor a safe ?redirect= (middleware sets it when bouncing a protected
+        // route), else the platform home. Legacy /dashboard is retired.
+        router.push(postAuthDestination(window.location.search))
       }
     } catch (error) {
       console.error('Sign in error:', error)

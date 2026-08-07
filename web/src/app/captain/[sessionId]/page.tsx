@@ -458,8 +458,8 @@ export default function CaptainDashboardPage() {
             <Button onClick={refresh} variant="outline" className="border-white/10 text-white hover:bg-white/5">
               Try Again
             </Button>
-            <Button onClick={() => router.push('/dashboard')} className="bg-white/10 text-white hover:bg-white/15">
-              Back to Dashboard
+            <Button onClick={() => router.push('/home')} className="bg-white/10 text-white hover:bg-white/15">
+              Back to TossUp
             </Button>
           </div>
         </motion.div>

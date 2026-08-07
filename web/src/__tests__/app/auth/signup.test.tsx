@@ -272,7 +272,8 @@ describe('SignUp Page', () => {
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Account created successfully!')
-        expect(mockPush).toHaveBeenCalledWith('/dashboard')
+        // Phase F: legacy /dashboard retired → land on the platform home feed.
+        expect(mockPush).toHaveBeenCalledWith('/home')
       })
     })
   })

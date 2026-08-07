@@ -64,6 +64,10 @@ function isApiRoute(pathname: string): boolean {
 function isPublicRoute(pathname: string): boolean {
   // Exact-match routes
   if (pathname === '/') return true
+  // The follows feed renders a signed-out gate (never bounce it to sign-in) and
+  // is the retirement target for the legacy /dashboard. Exact match — it has no
+  // subroutes, and a prefix would over-match e.g. /homework.
+  if (pathname === '/home') return true
 
   // Prefix-match routes (all subpaths are public)
   const publicPrefixes = [
@@ -73,7 +77,6 @@ function isPublicRoute(pathname: string): boolean {
     '/forgot-password',
     '/reset-password',
     '/live',
-    '/explore',
     '/tournament',
     // Platform (community/discovery) public surfaces. Trailing slashes on
     // /club/ and /player/ avoid exposing the legacy /clubs dashboard route.

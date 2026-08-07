@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+      // Phase F: legacy /dashboard retired → land on the platform home feed.
+      return NextResponse.redirect(`${requestUrl.origin}/home`)
     } catch (error) {
       console.error('Callback processing error:', error)
       return NextResponse.redirect(
