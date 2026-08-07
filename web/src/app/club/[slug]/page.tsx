@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { FollowButton } from '@/components/platform/FollowButton'
+import { getViewerFollowState } from '@/lib/platform/home-feed'
 import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
 import { UpcomingEvents } from '@/components/platform/UpcomingEvents'
 import { ClubAnnouncements } from '@/components/platform/ClubAnnouncements'
@@ -63,6 +65,8 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
 
   const canManage = await isServerScopeAdmin('club', club.id)
   const isPublicClub = club.visibility === 'PUBLIC' || club.visibility === null
+  // Only PUBLIC clubs are followable (RLS enforces the same); skip the read otherwise.
+  const followState = isPublicClub ? await getViewerFollowState('club', club.id) : null
   // Admins don't request to join their own club; skip the extra reads for them.
   const joinState = !canManage && isPublicClub ? await getViewerJoinState(club.id) : null
   // Server component renders once (no client re-render), so this is stable.
@@ -115,12 +119,23 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
           </div>
           <RecognitionBadge tier={club.recognition_tier as Tier} size="md" />
         </div>
-        <ShareButton
-          className="mt-5"
-          title={`${club.name} — Cricket Club on TossUp`}
-          text={[`${club.name} on TossUp`, place, club.is_recruiting ? 'recruiting players' : null].filter(Boolean).join(' · ')}
-          path={`/club/${club.slug}`}
-        />
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {followState && (
+            <FollowButton
+              scope="club"
+              scopeId={club.id}
+              signedIn={followState.signedIn}
+              following={followState.following}
+              followerCount={followState.followerCount}
+              redirectPath={`/club/${club.slug ?? slug}`}
+            />
+          )}
+          <ShareButton
+            title={`${club.name} — Cricket Club on TossUp`}
+            text={[`${club.name} on TossUp`, place, club.is_recruiting ? 'recruiting players' : null].filter(Boolean).join(' · ')}
+            path={`/club/${club.slug}`}
+          />
+        </div>
         {canManage && (
           <Link href={`/club/${club.slug}/manage`} className="mt-5 inline-block">
             <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">

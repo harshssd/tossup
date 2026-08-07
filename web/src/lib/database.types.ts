@@ -130,6 +130,14 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["club_join_requests"]["Row"]>
         Relationships: []
       }
+      follows: {
+        Row: {
+          id: string; user_id: string; scope: 'club' | 'league'; scope_id: string; created_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["follows"]["Row"]> & { user_id: string; scope: 'club' | 'league'; scope_id: string }
+        Update: Partial<Database["public"]["Tables"]["follows"]["Row"]>
+        Relationships: []
+      }
       team_memberships: {
         Row: { id: string; person_id: string; team_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
         Insert: Partial<Database["public"]["Tables"]["team_memberships"]["Row"]> & { person_id: string; team_id: string }
@@ -263,6 +271,7 @@ export type Database = {
     }
     Functions: {
       km_between: { Args: { lat1: number; lon1: number; lat2: number; lon2: number }; Returns: number }
+      follower_count: { Args: { p_scope: string; p_scope_id: string }; Returns: number }
       is_scope_admin: { Args: { p_user: string; p_scope: string; p_scope_id: string }; Returns: boolean }
       approve_tournament_registration: { Args: { p_reg_id: string }; Returns: string }
       add_club_member: { Args: { p_club_id: string; p_display_name: string; p_role?: string }; Returns: string }
