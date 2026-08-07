@@ -14,6 +14,8 @@ import { getTournament } from '@/lib/platform/queries'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { FollowButton } from '@/components/platform/FollowButton'
+import { getViewerFollowState } from '@/lib/platform/home-feed'
 import { formatPlace, formatDateRange } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
@@ -46,6 +48,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   if (!league) notFound()
 
   const canManage = await isServerScopeAdmin('league', id)
+  // Only PUBLIC tournaments are followable (RLS enforces the same); skip otherwise.
+  const followState = league.visibility === 'PUBLIC' || league.visibility === null
+    ? await getViewerFollowState('league', id)
+    : null
   const place = formatPlace(league, league.venue)
   const dates = formatDateRange(league.start_date, league.end_date)
   const championName = league.concluded_at
@@ -84,14 +90,25 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           <RecognitionBadge tier={league.recognition_tier as Tier} size="md" />
         </div>
         {league.description && <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#3a382f]">{league.description}</p>}
-        <ShareButton
-          className="mt-5"
-          title={`${league.name} — Cricket Tournament on TossUp`}
-          text={[`${league.name} on TossUp`, place, league.registration_status === 'OPEN' ? 'registration open' : null]
-            .filter(Boolean)
-            .join(' · ')}
-          path={`/tournaments/${league.id}`}
-        />
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {followState && (
+            <FollowButton
+              scope="league"
+              scopeId={league.id}
+              signedIn={followState.signedIn}
+              following={followState.following}
+              followerCount={followState.followerCount}
+              redirectPath={`/tournaments/${league.id}`}
+            />
+          )}
+          <ShareButton
+            title={`${league.name} — Cricket Tournament on TossUp`}
+            text={[`${league.name} on TossUp`, place, league.registration_status === 'OPEN' ? 'registration open' : null]
+              .filter(Boolean)
+              .join(' · ')}
+            path={`/tournaments/${league.id}`}
+          />
+        </div>
         {canManage && (
           <Link href={`/tournaments/${league.id}/manage`} className="mt-5 inline-block">
             <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
