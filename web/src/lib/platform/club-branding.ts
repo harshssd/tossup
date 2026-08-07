@@ -35,3 +35,21 @@ export function clubAssetPath(clubId: string, kind: 'crest' | 'cover', mimeType:
   const ext = EXT_BY_TYPE[mimeType] ?? 'png'
   return `${clubId}/${kind}-${token}.${ext}`
 }
+
+/** Extract the storage object path (`{clubId}/{kind}-{token}.{ext}`) from a
+ *  club-asset public URL, so a replaced/removed image can be deleted. Returns null
+ *  when the URL is NOT a club-assets object — e.g. an off-bucket URL an admin set
+ *  directly — so cleanup never targets something we didn't upload. */
+export function clubAssetObjectPath(publicUrl: string): string | null {
+  const marker = `/storage/v1/object/public/${CLUB_ASSET_BUCKET}/`
+  const i = publicUrl.indexOf(marker)
+  if (i === -1) return null
+  // Strip any query/hash the CDN URL might carry, then decode path segments.
+  const raw = publicUrl.slice(i + marker.length).split(/[?#]/)[0]
+  if (!raw) return null
+  try {
+    return raw.split('/').map(decodeURIComponent).join('/')
+  } catch {
+    return null
+  }
+}

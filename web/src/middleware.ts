@@ -2,13 +2,22 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
+// The embed widget (/embed/*) renders read-only PUBLIC club data and is meant to
+// be iframed on third-party club websites, so it opts out of the frame-busting
+// headers while keeping every other CSP protection.
+function isEmbedPath(pathname: string): boolean {
+  return pathname.startsWith('/embed/')
+}
+
+function addSecurityHeaders(response: NextResponse, pathname: string): NextResponse {
   // Content Security Policy
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const isLocalSupabase = supabaseUrl.includes('127.0.0.1') || supabaseUrl.includes('localhost')
   const connectSrc = isLocalSupabase
     ? `'self' ${supabaseUrl} ws://127.0.0.1:* wss://127.0.0.1:* https://*.supabase.co wss://*.supabase.co https://api.stripe.com`
     : `'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com`
+
+  const embed = isEmbedPath(pathname)
 
   response.headers.set(
     'Content-Security-Policy',
@@ -19,7 +28,8 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
       `connect-src ${connectSrc}`,
-      "frame-ancestors 'none'",
+      // Embed is frameable anywhere; every other route stays frame-busted.
+      embed ? 'frame-ancestors *' : "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'"
     ].join('; ')
@@ -27,7 +37,9 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
   // Additional security headers
   response.headers.set('X-DNS-Prefetch-Control', 'off')
-  response.headers.set('X-Frame-Options', 'DENY')
+  // X-Frame-Options can't express "allow any origin", so it's omitted for the
+  // embed — frame-ancestors above is the (CSP-level) source of truth there.
+  if (!embed) response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
@@ -68,6 +80,9 @@ function isPublicRoute(pathname: string): boolean {
     '/discover',
     '/club/',
     '/player/',
+    // The embeddable club widget is anonymous (iframed on third-party sites) —
+    // never redirect it to sign-in.
+    '/embed/',
     '/account',
     '/api/health',
     '/api/auth',
@@ -107,7 +122,7 @@ export async function middleware(request: NextRequest) {
       !supabaseUrl.startsWith('http')) {
 
     // Add security headers even when Supabase is not configured
-    supabaseResponse = addSecurityHeaders(supabaseResponse)
+    supabaseResponse = addSecurityHeaders(supabaseResponse, pathname)
     supabaseResponse.headers.set('x-request-id', crypto.randomUUID())
 
     return supabaseResponse
@@ -215,7 +230,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Add security headers
-  supabaseResponse = addSecurityHeaders(supabaseResponse)
+  supabaseResponse = addSecurityHeaders(supabaseResponse, pathname)
 
   // Add request ID and timing headers
   const requestId = crypto.randomUUID()
