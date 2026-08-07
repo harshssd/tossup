@@ -93,6 +93,34 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.recompute_reputation() FROM PUBLIC, anon, authenticated;
 
+-- recent_fixtures keys off fixtures.updated_at to mean "completed recently", but
+-- fixtures had no updated_at maintenance (it stuck at its INSERT default). Track
+-- it on every update so a status→COMPLETED transition bumps it and the recency
+-- signal is accurate.
+CREATE OR REPLACE FUNCTION public.fixtures_touch_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_fixtures_touch_updated_at ON public.fixtures;
+CREATE TRIGGER trg_fixtures_touch_updated_at
+  BEFORE UPDATE ON public.fixtures
+  FOR EACH ROW EXECUTE FUNCTION public.fixtures_touch_updated_at();
+
+-- Single-row throttle so a manual recompute can't be looped to impose repeated
+-- full-table scans. Definer-only (RLS on, no policies).
+CREATE TABLE IF NOT EXISTS public.reputation_recompute_state (
+  id boolean PRIMARY KEY DEFAULT true CHECK (id),
+  last_run timestamptz NOT NULL DEFAULT to_timestamp(0)
+);
+INSERT INTO public.reputation_recompute_state (id) VALUES (true) ON CONFLICT DO NOTHING;
+ALTER TABLE public.reputation_recompute_state ENABLE ROW LEVEL SECURITY;
+
 -- Admin "recompute now": a scope admin can force a refresh (e.g. after adding a
 -- trophy) instead of waiting for the nightly cron. Gated to a caller who admins
 -- at least one club — prevents an arbitrary signed-in user triggering the full
@@ -103,11 +131,24 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_catalog
 AS $$
+DECLARE
+  v_claimed int;
 BEGIN
   -- Reuse the canonical admin-clubs reader (covers owner_id + OWNER/ADMIN
   -- memberships); auth.uid() inside it still resolves to the caller.
   IF NOT EXISTS (SELECT 1 FROM public.list_my_admin_clubs()) THEN
     RAISE EXCEPTION 'not authorized';
+  END IF;
+  -- Throttle: atomically claim a >=2-minute window (the WHERE + row lock
+  -- serializes concurrent callers). If nothing was claimed, a manual recompute
+  -- already ran recently — no-op (the nightly cron and the prior run keep scores
+  -- fresh), so the caller still sees success.
+  UPDATE public.reputation_recompute_state
+    SET last_run = now()
+    WHERE last_run <= now() - interval '2 minutes';
+  GET DIAGNOSTICS v_claimed = ROW_COUNT;
+  IF v_claimed = 0 THEN
+    RETURN;
   END IF;
   PERFORM public.recompute_reputation();
 END;

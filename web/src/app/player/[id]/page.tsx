@@ -89,7 +89,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
         </Badge>
       )}
 
-      <ReputationCard score={player.reputation_score} signals={player.reputation_signals as ReputationSignals} />
+      <ReputationCard score={player.reputation_score} signals={player.reputation_signals as ReputationSignals | null} />
 
       {honors.length > 0 && (
         <section className="mt-6">

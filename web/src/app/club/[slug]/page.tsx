@@ -184,7 +184,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
         </div>
       )}
 
-      <ReputationCard score={club.reputation_score} signals={club.reputation_signals as ReputationSignals} />
+      <ReputationCard score={club.reputation_score} signals={club.reputation_signals as ReputationSignals | null} canRecompute={canManage} />
 
       {club.is_recruiting && (
         <Card className="cy-panel mt-6 border-[#bfe3cc]">

@@ -18,7 +18,10 @@ export const SIGNAL_LABELS: Record<string, string> = {
   completeness: 'Profile completeness',
 }
 
-// Display order — most meaningful signals first.
+// Display order — most meaningful signals first. `completeness` (a bare
+// filled-fields count, 0–7) is deliberately excluded from the public breakdown:
+// it still feeds the score, but as a number with no denominator it reads as
+// opaque next to the genuine activity counts.
 const SIGNAL_ORDER = [
   'honors',
   'members',
@@ -29,7 +32,6 @@ const SIGNAL_ORDER = [
   'recent_fixtures',
   'captaincies',
   'recent_memberships',
-  'completeness',
 ]
 
 export interface SignalRow {
@@ -54,14 +56,18 @@ export function formatSignals(signals: ReputationSignals | null | undefined): Si
 
 export interface ReputationTier {
   label: string
+  /** Hue for the badge tint (used at ~10% alpha as the background). */
   tone: string
+  /** Dark text colour that clears WCAG AA (4.5:1) on the light `tone` tint. */
+  text: string
 }
 
 /** Normalise the raw score into a friendly, bounded tier for display (so a page
- *  shows "Established" rather than a bare, unbounded number). Pure. */
+ *  shows "Established" rather than a bare, unbounded number). `text` is a darker
+ *  shade than `tone` so small badge text stays legible on the pale tint. Pure. */
 export function reputationTier(score: number): ReputationTier {
-  if (score >= 60) return { label: 'Thriving', tone: '#0f5a30' }
-  if (score >= 30) return { label: 'Established', tone: '#1f9d57' }
-  if (score >= 10) return { label: 'Active', tone: '#2257b3' }
-  return { label: 'Emerging', tone: '#9a978d' }
+  if (score >= 60) return { label: 'Thriving', tone: '#0f5a30', text: '#0b3f22' }
+  if (score >= 30) return { label: 'Established', tone: '#1f9d57', text: '#0f5a30' }
+  if (score >= 10) return { label: 'Active', tone: '#2257b3', text: '#1a4487' }
+  return { label: 'Emerging', tone: '#9a978d', text: '#57544c' }
 }

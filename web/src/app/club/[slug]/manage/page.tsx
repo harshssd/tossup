@@ -29,7 +29,6 @@ import { EVENT_TYPE_LABEL, type EventType, type EventWithCounts } from '@/lib/pl
 import { ClubAnnouncementsManager } from '@/components/platform/ClubAnnouncementsManager'
 import { ClubBrandingManager } from '@/components/platform/ClubBrandingManager'
 import { ClubEmbedSnippet } from '@/components/platform/ClubEmbedSnippet'
-import { RecomputeReputationButton } from '@/components/platform/RecomputeReputationButton'
 import { JoinRequestsManager } from '@/components/platform/JoinRequestsManager'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
@@ -297,10 +296,7 @@ export default function ManageClubPage() {
         <Link href={`/club/${slug}`} className="text-xs font-semibold uppercase tracking-wider text-[#9a978d] hover:text-[#16150f]">
           ← {club?.name}
         </Link>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="cy-display text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage roster</h1>
-          <RecomputeReputationButton />
-        </div>
+        <h1 className="cy-display mt-2 text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage roster</h1>
 
         {/* Branding */}
         <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
