@@ -116,7 +116,7 @@ BEGIN
       r.user_id, 'CLUB_JOIN_APPROVED',
       'You''re in! ' || COALESCE(v_club_name, 'A club') || ' approved your request',
       NULL,
-      '/club/' || COALESCE(v_club_slug, r.club_id::text),
+      CASE WHEN v_club_slug IS NOT NULL THEN '/club/' || v_club_slug END,
       jsonb_build_object('club_id', r.club_id)
     );
   ELSE
@@ -127,7 +127,7 @@ BEGIN
       r.user_id, 'CLUB_JOIN_REJECTED',
       COALESCE(v_club_name, 'A club') || ' didn''t accept your request this time',
       NULL,
-      '/club/' || COALESCE(v_club_slug, r.club_id::text),
+      CASE WHEN v_club_slug IS NOT NULL THEN '/club/' || v_club_slug END,
       jsonb_build_object('club_id', r.club_id)
     );
   END IF;

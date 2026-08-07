@@ -1,9 +1,9 @@
-import { loadNotifications, markRead, markAllRead } from '@/lib/platform/notifications-client'
+import { loadNotifications, countUnread, markRead, markAllRead } from '@/lib/platform/notifications-client'
 
 // notifications-client wraps the authed browser client; mock it to assert wiring.
 type Call = { table: string; method: string; args: unknown[] }
 let calls: Call[]
-let result: { data?: unknown; error?: unknown }
+let result: { data?: unknown; error?: unknown; count?: number }
 
 const getUser = jest.fn()
 const from = jest.fn()
@@ -54,6 +54,24 @@ describe('loadNotifications', () => {
   it('throws on a db error', async () => {
     result = { error: { message: 'boom' } }
     await expect(loadNotifications()).rejects.toThrow('boom')
+  })
+})
+
+describe('countUnread', () => {
+  it('counts own unread via an exact head count over the partial index', async () => {
+    result = { count: 4, error: null }
+    const n = await countUnread()
+    expect(calls[0].table).toBe('notifications')
+    expect(argsOf('select')).toEqual([['id', { count: 'exact', head: true }]])
+    expect(argsOf('eq')).toEqual([['user_id', 'user1']])
+    expect(argsOf('is')).toEqual([['read_at', null]])
+    expect(n).toBe(4)
+  })
+
+  it('returns 0 when signed out', async () => {
+    getUser.mockResolvedValue({ data: { user: null } })
+    expect(await countUnread()).toBe(0)
+    expect(from).not.toHaveBeenCalled()
   })
 })
 

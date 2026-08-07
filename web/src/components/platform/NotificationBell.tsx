@@ -6,8 +6,8 @@ import { Bell, Check } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import { timeAgo } from '@/lib/platform/pavilion'
-import { NOTIFICATION_META, unreadCount, unreadBadge, type AppNotification } from '@/lib/platform/notifications'
-import { loadNotifications, markRead, markAllRead, subscribeToNotifications } from '@/lib/platform/notifications-client'
+import { NOTIFICATION_META, unreadBadge, type AppNotification } from '@/lib/platform/notifications'
+import { loadNotifications, countUnread, markRead, markAllRead, subscribeToNotifications } from '@/lib/platform/notifications-client'
 
 /** Header notification bell (platform chrome). Reads the signed-in user's
  *  notifications, shows an unread badge, live-updates via realtime, and marks
@@ -15,11 +15,16 @@ import { loadNotifications, markRead, markAllRead, subscribeToNotifications } fr
 export function NotificationBell() {
   const [userId, setUserId] = useState<string | null>(null)
   const [items, setItems] = useState<AppNotification[]>([])
+  // Unread is tracked separately from `items` via an exact count query — the list
+  // is capped at 20, so deriving the badge from it would undercount.
+  const [unread, setUnread] = useState(0)
   const [open, setOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
-      setItems(await loadNotifications())
+      const [list, n] = await Promise.all([loadNotifications(), countUnread()])
+      setItems(list)
+      setUnread(n)
     } catch {
       // Non-fatal: the bell just stays empty if the fetch fails.
     }
@@ -46,7 +51,6 @@ export function NotificationBell() {
 
   if (!userId) return null
 
-  const unread = unreadCount(items)
   const badge = unreadBadge(unread)
 
   async function onOpenChange(next: boolean) {
@@ -57,8 +61,10 @@ export function NotificationBell() {
   async function onItemClick(n: AppNotification) {
     setOpen(false)
     if (!n.read_at) {
-      // Optimistic: flip locally, then persist (RLS scopes to the caller).
+      // Optimistic: flip locally + decrement the badge, then persist (RLS scopes
+      // to the caller); revert by refetching on failure.
       setItems((xs) => xs.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)))
+      setUnread((u) => Math.max(0, u - 1))
       try {
         await markRead(n.id)
       } catch {
@@ -69,6 +75,7 @@ export function NotificationBell() {
 
   async function onMarkAll() {
     setItems((xs) => xs.map((x) => (x.read_at ? x : { ...x, read_at: new Date().toISOString() })))
+    setUnread(0)
     try {
       await markAllRead()
     } catch {
@@ -110,8 +117,9 @@ export function NotificationBell() {
                 const meta = NOTIFICATION_META[n.kind]
                 const row = (
                   <div className={`flex items-start gap-2.5 px-4 py-3 ${n.read_at ? '' : 'bg-[#f6faf7]'}`}>
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: n.read_at ? '#d8d4c8' : meta.dot }} />
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: n.read_at ? '#d8d4c8' : meta.dot }} aria-hidden />
                     <div className="min-w-0 flex-1">
+                      {!n.read_at && <span className="sr-only">Unread. </span>}
                       <p className={`text-sm ${n.read_at ? 'text-[#3a382f]' : 'font-semibold text-[#16150f]'}`}>{n.title}</p>
                       {n.body && <p className="mt-0.5 line-clamp-2 text-xs text-[#6f6c63]">{n.body}</p>}
                       <p className="mt-0.5 text-[11px] text-[#9a978d]">{timeAgo(n.created_at)}</p>
