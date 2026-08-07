@@ -1,7 +1,7 @@
 import type { Fixture } from '@/lib/platform/queries'
 import { ShareButton } from './ShareButton'
 import { ShareImageButton } from './ShareImageButton'
-import { fixtureCardImagePath, shareCardFilename, formatCricketScore } from '@/lib/platform/share'
+import { fixtureCardImagePath, shareCardFilename, formatCricketScore, formatMatchDate } from '@/lib/platform/share'
 
 const STATUS: Record<string, { label: string; cls: string; live?: boolean }> = {
   LIVE: { label: 'Live', cls: 'bg-[#fdeee4] text-[#c0431a]', live: true },
@@ -17,13 +17,18 @@ export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?
   const aScore = formatCricketScore(fx.team_a_runs, fx.team_a_wickets, fx.team_a_overs)
   const bScore = formatCricketScore(fx.team_b_runs, fx.team_b_wickets, fx.team_b_overs)
 
-  const shareTitle = `${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'} — result on TossUp`
+  const matchup = `${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'}`
+  const shareTitle = `${matchup} — result on TossUp`
   const shareText = [
     `${fx.team_a_name ?? 'TBD'} ${aScore ?? ''} vs ${fx.team_b_name ?? 'TBD'} ${bScore ?? ''}`.replace(/\s+/g, ' ').trim(),
     fx.result_note,
   ]
     .filter(Boolean)
     .join(' — ')
+
+  // Scheduled fixtures get a "match announced" share card (date + venue, no score).
+  const announceTitle = `${matchup} — upcoming on TossUp`
+  const announceText = [matchup, formatMatchDate(fx.scheduled_at), fx.venue].filter(Boolean).join(' · ')
 
   return (
     <div
@@ -49,6 +54,19 @@ export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?
                 text={shareText}
               />
               <ShareButton variant="icon" title={shareTitle} text={shareText} path={`/tournaments/${fx.league_id}`} />
+            </>
+          )}
+          {fx.status === 'SCHEDULED' && (
+            <>
+              <ShareImageButton
+                variant="icon"
+                label="Fixture card"
+                imagePath={fixtureCardImagePath(fx.id)}
+                filename={shareCardFilename(fx.team_a_name, fx.team_b_name)}
+                title={announceTitle}
+                text={announceText}
+              />
+              <ShareButton variant="icon" title={announceTitle} text={announceText} path={`/tournaments/${fx.league_id}`} />
             </>
           )}
         </span>

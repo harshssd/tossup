@@ -12,6 +12,9 @@ interface Props {
   text?: string
   /** Download filename (no extension). */
   filename: string
+  /** Button label / accessible name for the card kind (e.g. "Result card",
+   *  "Fixture card", "Champions card"). */
+  label?: string
   variant?: 'pill' | 'icon'
   className?: string
 }
@@ -19,7 +22,7 @@ interface Props {
 /** Shares a generated result-card image: native file share on mobile (→ WhatsApp /
  *  Instagram / etc.), falling back to opening the PNG in a new tab so the user can
  *  save it. Kept resilient — any capability gap or error lands on the open-tab path. */
-export function ShareImageButton({ imagePath, title, text, filename, variant = 'pill', className }: Props) {
+export function ShareImageButton({ imagePath, title, text, filename, label = 'Result card', variant = 'pill', className }: Props) {
   const [busy, setBusy] = useState(false)
 
   const shareCard = async () => {
@@ -54,8 +57,8 @@ export function ShareImageButton({ imagePath, title, text, filename, variant = '
         type="button"
         onClick={shareCard}
         disabled={busy}
-        aria-label="Share result card"
-        title="Share result card"
+        aria-label={`Share ${label.toLowerCase()}`}
+        title={`Share ${label.toLowerCase()}`}
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full text-[#9a978d] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] disabled:opacity-50',
           className
@@ -77,7 +80,7 @@ export function ShareImageButton({ imagePath, title, text, filename, variant = '
       )}
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageDown className="h-3.5 w-3.5 text-[#1f9d57]" />}
-      Result card
+      {label}
     </button>
   )
 }
