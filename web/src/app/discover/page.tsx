@@ -6,7 +6,9 @@ import { DiscoverFilters } from '@/components/platform/DiscoverFilters'
 import { ClubCard } from '@/components/platform/ClubCard'
 import { PlayerCard } from '@/components/platform/PlayerCard'
 import { TournamentCard } from '@/components/platform/TournamentCard'
-import { listClubs, listPlayers, listTournaments } from '@/lib/platform/queries'
+import { listClubs, listPlayers, listTournaments, clubsNear } from '@/lib/platform/queries'
+import { parseNearParam, kmBetween } from '@/lib/platform/geo'
+import { NearMeButton } from '@/components/platform/NearMeButton'
 import type { Tier } from '@/lib/platform/recognition'
 import { cn } from '@/lib/utils'
 
@@ -35,9 +37,17 @@ export default async function DiscoverPage({
   const sp = await searchParams
   const tab: Tab = (['clubs', 'players', 'tournaments', 'recruiting'].includes(sp.tab ?? '') ? sp.tab : 'clubs') as Tab
   const common = { q: sp.q, country: sp.country, region: sp.region }
+  // "Clubs near me": a valid ?near=lat,lng (from the viewer's browser geolocation)
+  // switches the clubs grid to distance-ranked; a malformed value falls back to
+  // the normal listing.
+  const near = tab === 'clubs' ? parseNearParam(sp.near) : null
 
   const [clubs, players, tournaments, recClubs, recPlayers] = await Promise.all([
-    tab === 'clubs' ? listClubs({ ...common, tier: sp.tier as Tier | undefined, recruiting: !!sp.recruiting }) : [],
+    tab === 'clubs'
+      ? near
+        ? clubsNear(near.lat, near.lng)
+        : listClubs({ ...common, tier: sp.tier as Tier | undefined, recruiting: !!sp.recruiting })
+      : [],
     tab === 'players' ? listPlayers({ ...common, role: sp.role, lookingForClub: !!sp.looking }) : [],
     tab === 'tournaments' ? listTournaments({ ...common, tier: sp.tier as Tier | undefined, status: sp.status }) : [],
     tab === 'recruiting' ? listClubs({ ...common, recruiting: true }) : [],
@@ -117,9 +127,17 @@ export default async function DiscoverPage({
           })}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <DiscoverFilters tab={tab} />
+          {tab === 'clubs' && <NearMeButton active={!!near} />}
         </div>
+
+        {near && tab === 'clubs' && (
+          <p className="mt-4 text-sm text-[#6f6c63]">
+            Showing clubs <span className="font-semibold text-[#16150f]">nearest to you</span> first
+            {clubs.length === 0 && ' — no clubs with a location nearby yet'}.
+          </p>
+        )}
 
         {tab === 'recruiting' ? (
           <div className="mt-6 space-y-10">
@@ -170,7 +188,19 @@ export default async function DiscoverPage({
             </p>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {tab === 'clubs' && clubs.map((c, i) => <ClubCard key={c.id} club={c} index={i} />)}
+              {tab === 'clubs' &&
+                clubs.map((c, i) => (
+                  <ClubCard
+                    key={c.id}
+                    club={c}
+                    index={i}
+                    distanceKm={
+                      near && c.latitude != null && c.longitude != null
+                        ? kmBetween(near.lat, near.lng, c.latitude, c.longitude)
+                        : undefined
+                    }
+                  />
+                ))}
               {tab === 'players' && players.map((p, i) => <PlayerCard key={p.id} player={p} index={i} />)}
               {tab === 'tournaments' && tournaments.map((l, i) => <TournamentCard key={l.id} league={l} index={i} />)}
             </div>

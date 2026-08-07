@@ -1,12 +1,14 @@
 import Link from 'next/link'
-import { MapPin, UserPlus } from 'lucide-react'
+import { MapPin, UserPlus, Navigation } from 'lucide-react'
 import { RecognitionBadge } from './RecognitionBadge'
 import { initials, roleLabel, TIER_META, toTier } from '@/lib/platform/recognition'
+import { formatDistance } from '@/lib/platform/geo'
 import type { Club } from '@/lib/platform/queries'
 
-export function ClubCard({ club, index = 0 }: { club: Club; index?: number }) {
+export function ClubCard({ club, index = 0, distanceKm }: { club: Club; index?: number; distanceKm?: number }) {
   const tier = toTier(club.recognition_tier)
   const place = [club.city, club.region, club.country].filter(Boolean).join(', ') || club.location
+  const distance = distanceKm != null ? formatDistance(distanceKm) : ''
   return (
     <Link href={`/club/${club.slug}`} className="cy-rise block" style={{ animationDelay: `${index * 45}ms` }}>
       <div
@@ -28,7 +30,14 @@ export function ClubCard({ club, index = 0 }: { club: Club; index?: number }) {
               )}
             </div>
           </div>
-          <RecognitionBadge tier={tier} />
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <RecognitionBadge tier={tier} />
+            {distance && (
+              <span className="flex items-center gap-1 rounded-full bg-[#eef0ea] px-2 py-0.5 text-[11px] font-bold text-[#3a382f]">
+                <Navigation className="h-3 w-3" /> {distance}
+              </span>
+            )}
+          </div>
         </div>
         {club.description && (
           <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#6f6c63]">{club.description}</p>
