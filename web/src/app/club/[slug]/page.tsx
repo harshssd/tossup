@@ -18,6 +18,8 @@ import { ShareButton } from '@/components/platform/ShareButton'
 import { FollowButton } from '@/components/platform/FollowButton'
 import { getViewerFollowState } from '@/lib/platform/home-feed'
 import { TrophyCabinet } from '@/components/platform/TrophyCabinet'
+import { ReputationCard } from '@/components/platform/ReputationCard'
+import type { ReputationSignals } from '@/lib/platform/reputation-signals'
 import { UpcomingEvents } from '@/components/platform/UpcomingEvents'
 import { ClubAnnouncements } from '@/components/platform/ClubAnnouncements'
 import { JoinClubButton } from '@/components/platform/JoinClubButton'
@@ -181,6 +183,8 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
           ))}
         </div>
       )}
+
+      <ReputationCard score={club.reputation_score} signals={club.reputation_signals as ReputationSignals} />
 
       {club.is_recruiting && (
         <Card className="cy-panel mt-6 border-[#bfe3cc]">
