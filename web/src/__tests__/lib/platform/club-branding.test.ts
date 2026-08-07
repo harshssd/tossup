@@ -70,7 +70,14 @@ describe('clubAssetObjectPath', () => {
     expect(clubAssetObjectPath('https://proj.supabase.co/storage/v1/object/public/other-bucket/x.png')).toBeNull()
   })
 
-  it('returns null when the object path is empty', () => {
+  it('is anchored on the URL path — a marker hidden in a query string is ignored', () => {
+    // An off-bucket URL that smuggles the bucket marker into its query must NOT
+    // parse to a real object path (else cleanup could delete the club's asset).
+    expect(clubAssetObjectPath(`https://attacker.example/redir?to=${base}/club1/crest.png`)).toBeNull()
+  })
+
+  it('returns null for a non-URL or empty object path', () => {
+    expect(clubAssetObjectPath('not a url')).toBeNull()
     expect(clubAssetObjectPath(`${base}/`)).toBeNull()
   })
 })

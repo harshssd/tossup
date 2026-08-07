@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MapPin, UserPlus, ArrowUpRight } from 'lucide-react'
 import { getClubBySlug, countClubMembers } from '@/lib/platform/queries'
-import { TIER_META, type Tier } from '@/lib/platform/recognition'
-import { isValidHexColor } from '@/lib/platform/club-branding'
+import { TIER_META, toTier } from '@/lib/platform/recognition'
+import { isValidHexColor, clubAssetObjectPath } from '@/lib/platform/club-branding'
 import { formatPlace } from '@/lib/platform/format'
 
 // The embeddable club microsite card — a compact, self-contained view a club
@@ -23,9 +23,14 @@ export default async function ClubEmbed({ params }: { params: Promise<{ slug: st
 
   const members = await countClubMembers(club.id)
   const place = formatPlace(club, club.location)
-  const tier = club.recognition_tier as Tier
+  const tier = toTier(club.recognition_tier)
   const accent = club.accent_color && isValidHexColor(club.accent_color) ? club.accent_color : null
   const href = `/club/${club.slug ?? slug}`
+  // This widget is iframed on arbitrary third-party sites, so render ONLY
+  // first-party uploads (a real club-assets object) — never an admin-set external
+  // URL, which on an anonymous cross-site surface would be a tracking pixel.
+  const crestUrl = club.crest_url && clubAssetObjectPath(club.crest_url) ? club.crest_url : null
+  const coverUrl = club.cover_url && clubAssetObjectPath(club.cover_url) ? club.cover_url : null
 
   return (
     <div className="clubhouse cy-ground min-h-screen p-3">
@@ -36,18 +41,18 @@ export default async function ClubEmbed({ params }: { params: Promise<{ slug: st
         className="group relative mx-auto flex max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e7e4db] bg-white no-underline shadow-[0_10px_40px_-24px_rgba(20,21,15,0.5)]"
       >
         {accent && <div style={{ height: 4, backgroundColor: accent }} />}
-        {club.cover_url && (
+        {coverUrl && (
           <div className="relative h-24 w-full">
-            <Image src={club.cover_url} alt="" fill sizes="520px" className="object-cover" unoptimized />
+            <Image src={coverUrl} alt="" fill sizes="520px" className="object-cover" unoptimized />
           </div>
         )}
         <div className="flex items-start gap-3 p-4">
-          {club.crest_url && (
+          {crestUrl && (
             <div
-              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 bg-white ${club.cover_url ? '-mt-10' : ''}`}
+              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 bg-white ${coverUrl ? '-mt-10' : ''}`}
               style={{ borderColor: accent ?? '#e7e4db' }}
             >
-              <Image src={club.crest_url} alt={`${club.name} crest`} fill sizes="56px" className="object-contain p-0.5" unoptimized />
+              <Image src={crestUrl} alt={`${club.name} crest`} fill sizes="56px" className="object-contain p-0.5" unoptimized />
             </div>
           )}
           <div className="min-w-0 flex-1">
