@@ -138,6 +138,17 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["follows"]["Row"]>
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string; user_id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          title: string; body: string | null; link: string | null
+          data: Json; read_at: string | null; created_at: string
+        }
+        Insert: Partial<Database["public"]["Tables"]["notifications"]["Row"]> & { user_id: string; kind: Database["public"]["Enums"]["notification_kind"]; title: string }
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>
+        Relationships: []
+      }
       team_memberships: {
         Row: { id: string; person_id: string; team_id: string; role: Database["public"]["Enums"]["organization_role"]; created_at: string }
         Insert: Partial<Database["public"]["Tables"]["team_memberships"]["Row"]> & { person_id: string; team_id: string }
@@ -309,6 +320,7 @@ export type Database = {
       post_kind: "ANNOUNCEMENT" | "SCHEDULE" | "RESULT" | "ALERT" | "GENERAL" | "FLAG"
       post_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       flag_status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED"
+      notification_kind: "CLUB_JOIN_APPROVED" | "CLUB_JOIN_REJECTED" | "EVENT_REMINDER" | "GENERIC"
     }
     CompositeTypes: Record<string, never>
   }

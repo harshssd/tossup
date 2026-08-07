@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LogIn } from 'lucide-react'
 import { createPlatformBrowserClient } from '@/lib/platform/auth-browser'
 import { initials } from '@/lib/platform/recognition'
+import { NotificationBell } from './NotificationBell'
 
 // Header auth slot for the platform chrome. Reflects the platform session
 // client-side (no SSR auth coupling, so it works whether the parent page is a
@@ -40,10 +41,13 @@ export function PlatformAuthNav() {
   }
 
   return (
-    <Link href="/account" title={label ?? 'Account'} className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-[#eef0ea]">
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0f5a30] text-[11px] font-bold text-white">
-        {initials(label ?? 'P')}
-      </span>
-    </Link>
+    <div className="flex items-center gap-1">
+      <NotificationBell />
+      <Link href="/account" title={label ?? 'Account'} className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-[#eef0ea]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0f5a30] text-[11px] font-bold text-white">
+          {initials(label ?? 'P')}
+        </span>
+      </Link>
+    </div>
   )
 }
