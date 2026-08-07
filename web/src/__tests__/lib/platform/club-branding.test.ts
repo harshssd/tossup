@@ -1,4 +1,11 @@
-import { isValidHexColor, imageUploadError, clubAssetPath, MAX_IMAGE_BYTES } from '@/lib/platform/club-branding'
+import {
+  isValidHexColor,
+  imageUploadError,
+  clubAssetPath,
+  clubAssetObjectPath,
+  CLUB_ASSET_BUCKET,
+  MAX_IMAGE_BYTES,
+} from '@/lib/platform/club-branding'
 
 describe('isValidHexColor', () => {
   it('accepts 6-digit hex (either case)', () => {
@@ -34,5 +41,43 @@ describe('clubAssetPath', () => {
   })
   it('defaults an unknown mime to png', () => {
     expect(clubAssetPath('c', 'crest', 'image/tiff', 9)).toBe('c/crest-9.png')
+  })
+})
+
+describe('clubAssetObjectPath', () => {
+  const base = `https://proj.supabase.co/storage/v1/object/public/${CLUB_ASSET_BUCKET}`
+
+  it('extracts the object path from a club-assets public URL', () => {
+    expect(clubAssetObjectPath(`${base}/club1/crest-100.png`)).toBe('club1/crest-100.png')
+  })
+
+  it('round-trips a clubAssetPath', () => {
+    const p = clubAssetPath('club-xyz', 'cover', 'image/webp', 55)
+    expect(clubAssetObjectPath(`${base}/${p}`)).toBe(p)
+  })
+
+  it('strips a query string / hash the CDN may append', () => {
+    expect(clubAssetObjectPath(`${base}/club1/crest-100.png?width=64`)).toBe('club1/crest-100.png')
+    expect(clubAssetObjectPath(`${base}/club1/crest-100.png#x`)).toBe('club1/crest-100.png')
+  })
+
+  it('decodes percent-encoded path segments', () => {
+    expect(clubAssetObjectPath(`${base}/club1/crest%2D100.png`)).toBe('club1/crest-100.png')
+  })
+
+  it('returns null for an off-bucket URL (never target what we did not upload)', () => {
+    expect(clubAssetObjectPath('https://example.com/logo.png')).toBeNull()
+    expect(clubAssetObjectPath('https://proj.supabase.co/storage/v1/object/public/other-bucket/x.png')).toBeNull()
+  })
+
+  it('is anchored on the URL path — a marker hidden in a query string is ignored', () => {
+    // An off-bucket URL that smuggles the bucket marker into its query must NOT
+    // parse to a real object path (else cleanup could delete the club's asset).
+    expect(clubAssetObjectPath(`https://attacker.example/redir?to=${base}/club1/crest.png`)).toBeNull()
+  })
+
+  it('returns null for a non-URL or empty object path', () => {
+    expect(clubAssetObjectPath('not a url')).toBeNull()
+    expect(clubAssetObjectPath(`${base}/`)).toBeNull()
   })
 })

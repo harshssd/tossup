@@ -35,3 +35,28 @@ export function clubAssetPath(clubId: string, kind: 'crest' | 'cover', mimeType:
   const ext = EXT_BY_TYPE[mimeType] ?? 'png'
   return `${clubId}/${kind}-${token}.${ext}`
 }
+
+/** Extract the storage object path (`{clubId}/{kind}-{token}.{ext}`) from a
+ *  club-asset public URL, so a replaced/removed image can be deleted — and so the
+ *  embed can render only first-party uploads. Returns null when the URL is NOT a
+ *  club-assets object (e.g. an off-bucket URL an admin set directly), so cleanup
+ *  never targets something we didn't upload. Anchored on the URL's PATH (not a
+ *  substring search) so a marker hidden in a query string can't be mistaken for a
+ *  real object path. */
+export function clubAssetObjectPath(publicUrl: string): string | null {
+  const prefix = `/storage/v1/object/public/${CLUB_ASSET_BUCKET}/`
+  let pathname: string
+  try {
+    pathname = new URL(publicUrl).pathname
+  } catch {
+    return null
+  }
+  if (!pathname.startsWith(prefix)) return null
+  const raw = pathname.slice(prefix.length)
+  if (!raw) return null
+  try {
+    return raw.split('/').map(decodeURIComponent).join('/')
+  } catch {
+    return null
+  }
+}

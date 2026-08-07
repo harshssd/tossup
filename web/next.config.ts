@@ -36,27 +36,22 @@ const nextConfig: NextConfig = {
 
   // Security headers
   async headers() {
+    // Applied to every route (including the embed widget).
+    const baseSecurity = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    ];
     return [
+      { source: '/(.*)', headers: baseSecurity },
+      // Static fallback clickjacking protection everywhere EXCEPT the embed
+      // widget (designed to be iframed on third-party club sites). The middleware
+      // is the primary source — it sets a full CSP whose `frame-ancestors` is
+      // `*` for /embed/* and `'none'` elsewhere; this rule just guarantees a
+      // frame-busting header on normal routes even if the middleware is skipped.
       {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-        ],
+        source: '/((?!embed/).*)',
+        headers: [{ key: 'X-Frame-Options', value: 'DENY' }],
       },
     ];
   },

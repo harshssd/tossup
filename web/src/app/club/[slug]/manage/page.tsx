@@ -28,6 +28,7 @@ import { createEvent, deleteEvent, loadClubEventsAdmin } from '@/lib/platform/ev
 import { EVENT_TYPE_LABEL, type EventType, type EventWithCounts } from '@/lib/platform/events'
 import { ClubAnnouncementsManager } from '@/components/platform/ClubAnnouncementsManager'
 import { ClubBrandingManager } from '@/components/platform/ClubBrandingManager'
+import { ClubEmbedSnippet } from '@/components/platform/ClubEmbedSnippet'
 import { JoinRequestsManager } from '@/components/platform/JoinRequestsManager'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
@@ -302,6 +303,12 @@ export default function ManageClubPage() {
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">Branding</h2>
           <p className="mt-1 text-sm text-[#6f6c63]">Your crest, cover photo, and accent colour — this is what makes your club page yours.</p>
           {club && <ClubBrandingManager clubId={club.id} />}
+        </section>
+
+        {/* Embed */}
+        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+          <h2 className="cy-display text-xl font-semibold text-[#16150f]">Embed on your website</h2>
+          {club && <ClubEmbedSnippet slug={slug} />}
         </section>
 
         {/* Join requests */}
