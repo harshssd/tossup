@@ -44,6 +44,13 @@ export async function getClubBySlug(slug: string): Promise<Club | null> {
   return data
 }
 
+/** PUBLIC clubs (with coordinates) ordered by distance from a point — powers the
+ *  "clubs near me" mode. Anon RPC; RLS still applies, so only PUBLIC clubs return. */
+export async function clubsNear(lat: number, lng: number, limit = 60): Promise<Club[]> {
+  const { data } = await platformDb.rpc('clubs_near', { p_lat: lat, p_lng: lng, p_limit: limit })
+  return (data ?? []) as Club[]
+}
+
 export async function countClubMembers(clubId: string): Promise<number> {
   const { count } = await platformDb
     .from('club_memberships')
