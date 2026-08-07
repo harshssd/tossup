@@ -29,6 +29,7 @@ function FeedRow({ item, now }: { item: FeedItem; now: number }) {
     >
       <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${meta.chip}`}>
         <Icon className="h-4 w-4" aria-hidden />
+        <span className="sr-only">{meta.label}</span>
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">

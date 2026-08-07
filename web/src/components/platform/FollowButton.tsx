@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Heart } from 'lucide-react'
+import { Heart, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { setFollow } from '@/lib/platform/follows-client'
 import type { FollowScope } from '@/lib/platform/follows'
@@ -61,17 +61,24 @@ export function FollowButton({ scope, scopeId, signedIn, following, followerCoun
         disabled={busy}
         onClick={toggle}
         aria-pressed={isFollowing}
+        aria-busy={busy}
+        // rounded-full + xs/bold to sit in the same pill language as the
+        // adjacent ShareButton on the club/tournament heroes.
         className={
           isFollowing
-            ? 'gap-1.5 border-[#1f9d57] text-[#0f5a30] hover:bg-[#e7f4ec]'
-            : 'gap-1.5 bg-[#1f9d57] text-white hover:bg-[#0f5a30]'
+            ? 'gap-1.5 rounded-full border-[#1f9d57] px-4 text-xs font-bold text-[#0f5a30] hover:bg-[#e7f4ec]'
+            : 'gap-1.5 rounded-full bg-[#1f9d57] px-4 text-xs font-bold text-white hover:bg-[#0f5a30]'
         }
       >
-        <Heart className={`h-4 w-4 ${isFollowing ? 'fill-[#1f9d57]' : ''}`} aria-hidden />
+        {busy ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+        ) : (
+          <Heart className={`h-3.5 w-3.5 ${isFollowing ? 'fill-[#1f9d57]' : ''}`} aria-hidden />
+        )}
         {isFollowing ? 'Following' : 'Follow'}
       </Button>
       {count > 0 && (
-        <span className="text-xs text-[#6f6c63]">
+        <span className="text-xs text-[#6f6c63]" aria-live="polite">
           {count.toLocaleString()} follower{count === 1 ? '' : 's'}
         </span>
       )}

@@ -60,7 +60,10 @@ CREATE POLICY follows_self_delete ON public.follows
 -- Public follower count for a target. SECURITY DEFINER so it can aggregate across
 -- the whole table (which is otherwise own-rows-only) WITHOUT exposing who — it
 -- returns just an integer. Callable by anyone (a signed-out visitor sees the
--- count on a club/tournament hero).
+-- count on a club/tournament hero). Gated on the target being PUBLIC so it can't
+-- confirm the existence of / leak metadata about a PRIVATE scope to a caller who
+-- happens to hold its UUID — matching the follow/feed visibility invariant. A
+-- non-public (or unknown) target returns 0.
 CREATE OR REPLACE FUNCTION public.follower_count(p_scope text, p_scope_id uuid)
 RETURNS bigint
 LANGUAGE sql
@@ -68,8 +71,19 @@ SECURITY DEFINER
 SET search_path = public, pg_catalog
 STABLE
 AS $$
-  SELECT count(*) FROM public.follows
-  WHERE scope = p_scope AND scope_id = p_scope_id;
+  SELECT count(*) FROM public.follows f
+  WHERE f.scope = p_scope AND f.scope_id = p_scope_id
+    AND (
+      (p_scope = 'club' AND EXISTS (
+        SELECT 1 FROM public.clubs c
+        WHERE c.id = p_scope_id AND (c.visibility = 'PUBLIC' OR c.visibility IS NULL)
+      ))
+      OR
+      (p_scope = 'league' AND EXISTS (
+        SELECT 1 FROM public.leagues l
+        WHERE l.id = p_scope_id AND (l.visibility = 'PUBLIC' OR l.visibility IS NULL)
+      ))
+    );
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.follower_count(text, uuid) FROM PUBLIC;

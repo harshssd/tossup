@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Compass, Plus, Shield, Heart } from 'lucide-react'
+import { Compass, Plus, Shield, Newspaper } from 'lucide-react'
 import { CricketBall } from './CricketBall'
 import { PlatformAuthNav } from './PlatformAuthNav'
 
@@ -34,7 +34,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               aria-label="Your feed"
               className="flex items-center rounded-full p-2 text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:hidden"
             >
-              <Heart className="h-4 w-4" />
+              <Newspaper className="h-4 w-4" />
             </Link>
             <Link
               href="/discover"
