@@ -19,6 +19,9 @@ export function parseNearParam(value: string | undefined | null): { lat: number;
   if (!value) return null
   const parts = value.split(',')
   if (parts.length !== 2) return null
+  // Reject empty components — Number('') is 0, which would silently resolve
+  // "37.77," to {lat:37.77, lng:0} instead of falling back to the normal listing.
+  if (parts[0].trim() === '' || parts[1].trim() === '') return null
   const lat = Number(parts[0])
   const lng = Number(parts[1])
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null

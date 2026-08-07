@@ -31,6 +31,10 @@ describe('parseNearParam', () => {
     expect(parseNearParam('91,0')).toBeNull() // lat out of range
     expect(parseNearParam('0,181')).toBeNull() // lng out of range
     expect(parseNearParam('1,2,3')).toBeNull()
+    // Empty components must reject (Number('') === 0, not NaN).
+    expect(parseNearParam('37.77,')).toBeNull()
+    expect(parseNearParam(',')).toBeNull()
+    expect(parseNearParam(',-122.42')).toBeNull()
   })
 })
 

@@ -11,7 +11,11 @@ CREATE OR REPLACE FUNCTION public.clubs_near(
 RETURNS SETOF public.clubs
 LANGUAGE sql
 STABLE
+SET search_path = public, pg_catalog
 AS $$
+  -- NOTE: ORDER BY km_between() can't use the lat/lng btree index, so this is a
+  -- seq scan + sort bounded by the LIMIT. Fine at current scale; add a
+  -- bounding-box prefilter (or PostGIS/earthdistance + GiST) when club counts grow.
   SELECT c.*
   FROM public.clubs c
   WHERE (c.visibility = 'PUBLIC' OR c.visibility IS NULL)

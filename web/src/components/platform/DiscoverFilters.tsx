@@ -20,6 +20,9 @@ export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; bas
     const params = new URLSearchParams(sp.toString())
     // The tab param only means something on /discover; single-type pages don't need it.
     if (basePath === '/discover') params.set('tab', tab)
+    // Applying any filter exits "clubs near me" — the distance-ranked mode ignores
+    // filters, so leaving `near` set would make the controls visibly no-op.
+    params.delete('near')
     for (const [k, v] of Object.entries({ q, ...overrides })) {
       if (v) params.set(k, v)
       else params.delete(k)
