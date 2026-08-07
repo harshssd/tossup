@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS public.event_reminders_sent (
 );
 ALTER TABLE public.event_reminders_sent ENABLE ROW LEVEL SECURITY;
 
+-- Supports the producer's standalone starts_at range scan (the existing
+-- (club_id, starts_at) index can't serve a club_id-less window).
+CREATE INDEX IF NOT EXISTS club_events_starts_idx ON public.club_events (starts_at);
+
 -- Producer: notify each GOING/MAYBE RSVP for events starting in (now, now+48h]
 -- that hasn't already been reminded. Idempotent via event_reminders_sent.
 -- Returns how many reminders were sent (for observability / manual runs).
@@ -48,10 +52,14 @@ BEGIN
     IF NOT FOUND THEN
       CONTINUE;
     END IF;
+    -- No date/time in the body: starts_at is timestamptz and we have no per-club
+    -- timezone, so a server-side (UTC) date would be off-by-a-day for far-region
+    -- members. The reminder only fires within 48h ("starting soon"), and the link
+    -- opens the club page which renders the exact time in the viewer's locale.
     PERFORM public.notify(
       rec.user_id, 'EVENT_REMINDER',
       'Reminder: ' || rec.title,
-      COALESCE(rec.club_name, 'Your club') || ' · ' || to_char(rec.starts_at, 'Dy DD Mon'),
+      COALESCE(rec.club_name, 'Your club') || ' · starting soon',
       CASE WHEN rec.club_slug IS NOT NULL THEN '/club/' || rec.club_slug END,
       jsonb_build_object('event_id', rec.event_id, 'club_id', rec.club_id)
     );
@@ -64,15 +72,16 @@ $$;
 -- Producer is job/service-role only — never a client RPC.
 REVOKE EXECUTE ON FUNCTION public.send_event_reminders() FROM PUBLIC, anon, authenticated;
 
--- Schedule every 6 hours so a late RSVP inside the 48h window still gets reminded
--- promptly. Guarded so a local `db reset` (no pg_cron) doesn't abort.
+-- Schedule hourly so a last-minute event (created/RSVP'd shortly before it starts)
+-- isn't missed between coarse ticks; the per-(event,user) dedup makes extra ticks
+-- free (no repeat sends). Guarded so a local `db reset` (no pg_cron) doesn't abort.
 DO $$
 BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_cron;
   IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'send-event-reminders') THEN
     PERFORM cron.unschedule('send-event-reminders');
   END IF;
-  PERFORM cron.schedule('send-event-reminders', '0 */6 * * *', 'SELECT public.send_event_reminders();');
+  PERFORM cron.schedule('send-event-reminders', '0 * * * *', 'SELECT public.send_event_reminders();');
 EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'pg_cron unavailable; skipping send-event-reminders schedule (%).', SQLERRM;
 END $$;
