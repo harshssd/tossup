@@ -136,6 +136,34 @@ export async function getFixtureForCard(
   return { fixture, league }
 }
 
+/** Fetch a concluded tournament's champion (+ runner-up) names for the shareable
+ *  champions card. Anon read: leagues RLS hides private tournaments → null (route
+ *  404s). Returns null if the tournament isn't concluded or has no champion set. */
+export async function getChampionsForCard(leagueId: string): Promise<{
+  league: Pick<League, 'name' | 'recognition_tier'>
+  championName: string
+  runnerUpName: string | null
+} | null> {
+  const { data: league } = await platformDb
+    .from('leagues')
+    .select('name, recognition_tier, concluded_at, champion_team_id, runner_up_team_id')
+    .eq('id', leagueId)
+    .maybeSingle()
+  if (!league || !league.concluded_at || !league.champion_team_id) return null
+
+  const ids = [league.champion_team_id, league.runner_up_team_id].filter((v): v is string => !!v)
+  const { data: teams } = await platformDb.from('tournament_teams').select('id, name').in('id', ids)
+  const nameOf = (id: string | null) => (id ? teams?.find((t) => t.id === id)?.name ?? null : null)
+  const championName = nameOf(league.champion_team_id)
+  if (!championName) return null
+
+  return {
+    league: { name: league.name, recognition_tier: league.recognition_tier },
+    championName,
+    runnerUpName: nameOf(league.runner_up_team_id),
+  }
+}
+
 // ---------------- Mutations (anon writes until auth lands) ----------------
 // Club create moved to lib/platform/club-admin.ts (createOwnedClub) — after the
 // Phase 5 RLS, clubs INSERT must run as the authenticated owner, so the anon

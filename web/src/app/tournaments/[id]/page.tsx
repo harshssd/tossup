@@ -14,8 +14,10 @@ import { getTournament } from '@/lib/platform/queries'
 import { isServerScopeAdmin } from '@/lib/platform/auth-server'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
+import { ShareImageButton } from '@/components/platform/ShareImageButton'
 import { FollowButton } from '@/components/platform/FollowButton'
 import { getViewerFollowState } from '@/lib/platform/home-feed'
+import { championsCardImagePath, championsCardFilename } from '@/lib/platform/share'
 import { formatPlace, formatDateRange } from '@/lib/platform/format'
 
 export const dynamic = 'force-dynamic'
@@ -120,7 +122,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
 
       {championName && (
         <div
-          className="mt-6 flex items-center gap-3 overflow-hidden rounded-2xl border p-5"
+          className="mt-6 flex flex-wrap items-center gap-3 overflow-hidden rounded-2xl border p-5"
           style={{ borderColor: '#f0d98a', background: 'linear-gradient(105deg,#fbf3d6,#fdfaf0)' }}
         >
           <Trophy className="h-8 w-8 shrink-0 text-[#c99a1e]" />
@@ -133,6 +135,17 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
               </p>
             )}
           </div>
+          <ShareImageButton
+            className="ml-auto"
+            label="Champions card"
+            tone="gold"
+            imagePath={championsCardImagePath(league.id)}
+            filename={championsCardFilename(championName)}
+            title={`${championName} — champions of ${league.name} on TossUp`}
+            text={[`${championName} — champions of ${league.name}`, runnerUpName ? `Runners-up: ${runnerUpName}` : null]
+              .filter(Boolean)
+              .join(' · ')}
+          />
         </div>
       )}
 
