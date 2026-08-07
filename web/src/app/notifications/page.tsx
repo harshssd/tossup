@@ -18,7 +18,13 @@ export default function NotificationsInboxPage() {
   const [items, setItems] = useState<AppNotification[]>([])
 
   const refresh = useCallback(async () => {
-    setItems(await loadNotifications(100))
+    // Swallow its own error so callers (including failure-path fallbacks) never
+    // produce a dangling rejection; on failure we just keep the current list.
+    try {
+      setItems(await loadNotifications(100))
+    } catch {
+      /* keep current items */
+    }
   }, [])
 
   useEffect(() => {
@@ -74,7 +80,7 @@ export default function NotificationsInboxPage() {
         {status === 'loading' && <p className="mt-8 text-center text-sm text-[#9a978d]">Loading…</p>}
 
         {status === 'guest' && (
-          <div className="cy-panel mt-8 rounded-3xl border border-dashed border-[#d8d4c8] p-8 text-center">
+          <div className="cy-panel mt-8 rounded-2xl border border-dashed border-[#d8d4c8] p-8 text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e7f4ec]">
               <Bell className="h-6 w-6 text-[#1f9d57]" aria-hidden />
             </span>
@@ -90,7 +96,7 @@ export default function NotificationsInboxPage() {
 
         {status === 'ready' &&
           (items.length === 0 ? (
-            <div className="cy-panel mt-8 rounded-3xl border border-[#e7e4db] p-10 text-center">
+            <div className="cy-panel mt-8 rounded-2xl border border-[#e7e4db] p-10 text-center">
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e7f4ec]">
                 <Bell className="h-6 w-6 text-[#1f9d57]" aria-hidden />
               </span>
