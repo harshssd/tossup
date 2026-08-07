@@ -1,11 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { getChampionsForCard } from '@/lib/platform/queries'
 import { TIER_META, toTier } from '@/lib/platform/recognition'
-
-const INK = '#16150f'
-const GOLD = '#c99a1e'
-
-const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
+import { Frame, HeaderBadge, TrophyMark, INK, truncate } from '@/lib/platform/share-card'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ leagueId: string }> }) {
   const { leagueId } = await params
@@ -25,59 +21,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ leagueI
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', backgroundColor: '#f5f4ef', fontFamily: 'sans-serif' }}>
-        <div style={{ display: 'flex', width: 24, backgroundColor: tierColor }} />
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            flexGrow: 1,
-            padding: '84px 88px',
-            // Warm gradient wash to set the silverware apart from the result card.
-            backgroundImage: 'linear-gradient(150deg, #fbf3d6 0%, #f5f4ef 55%)',
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignSelf: 'flex-start',
-                padding: '10px 26px',
-                borderRadius: 999,
-                backgroundColor: '#fbe7b8',
-                color: '#8a6d12',
-                fontSize: 30,
-                fontWeight: 800,
-                letterSpacing: 4,
-              }}
-            >
-              CHAMPIONS
-            </div>
-            <div style={{ display: 'flex', fontSize: 40, fontWeight: 700, color: '#6f6c63' }}>{truncate(league.name, 40)}</div>
-          </div>
+      // Warm gold wash sets the silverware apart from the result card.
+      <Frame tierColor={tierColor} backgroundImage="linear-gradient(150deg, #fbf3d6 0%, #f5f4ef 55%)">
+        <HeaderBadge label="CHAMPIONS" league={truncate(league.name, 40)} tone="gold" />
 
-          {/* Champion */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              <div style={{ display: 'flex', width: 64, height: 64, borderRadius: 999, backgroundColor: GOLD }} />
-              <div style={{ display: 'flex', fontSize: 34, fontWeight: 800, color: '#8a6d12', letterSpacing: 2 }}>WINNERS</div>
-            </div>
-            <div style={{ display: 'flex', fontSize: champSize, fontWeight: 800, color: INK, lineHeight: 1.05 }}>{champion}</div>
-            {runnerUp ? (
-              <div style={{ display: 'flex', fontSize: 38, fontWeight: 700, color: '#8a877d' }}>Runner-up · {runnerUp}</div>
-            ) : null}
+        {/* Champion */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex' }}>
+            <TrophyMark size={92} />
           </div>
-
-          {/* Footer / brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 34, color: '#6f6c63' }}>
-            <div style={{ display: 'flex', width: 22, height: 22, borderRadius: 999, backgroundColor: '#c1121f' }} />
-            <span style={{ fontWeight: 800, color: INK }}>TossUp</span>
-            <span>· made with tossup.app</span>
-          </div>
+          <div style={{ display: 'flex', fontSize: champSize, fontWeight: 800, color: INK, lineHeight: 1.05 }}>{champion}</div>
+          {runnerUp ? (
+            <div style={{ display: 'flex', fontSize: 38, fontWeight: 700, color: '#8a877d' }}>Runner-up · {runnerUp}</div>
+          ) : null}
         </div>
-      </div>
+      </Frame>
     ),
     {
       width: 1080,

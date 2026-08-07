@@ -138,6 +138,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           <ShareImageButton
             className="ml-auto"
             label="Champions card"
+            tone="gold"
             imagePath={championsCardImagePath(league.id)}
             filename={championsCardFilename(championName)}
             title={`${championName} — champions of ${league.name} on TossUp`}

@@ -60,7 +60,7 @@ export function MatchCard({ fixture: fx, index = 0 }: { fixture: Fixture; index?
             <>
               <ShareImageButton
                 variant="icon"
-                label="Fixture card"
+                label="Match card"
                 imagePath={fixtureCardImagePath(fx.id)}
                 filename={shareCardFilename(fx.team_a_name, fx.team_b_name)}
                 title={announceTitle}

@@ -13,16 +13,25 @@ interface Props {
   /** Download filename (no extension). */
   filename: string
   /** Button label / accessible name for the card kind (e.g. "Result card",
-   *  "Fixture card", "Champions card"). */
+   *  "Match card", "Champions card"). */
   label?: string
+  /** Accent tone for the pill — 'gold' matches a silverware/champions surface. */
+  tone?: 'green' | 'gold'
   variant?: 'pill' | 'icon'
   className?: string
 }
 
+const PILL_TONE = {
+  green: 'hover:border-[#1f9d57] hover:text-[#0f5a30]',
+  gold: 'hover:border-[#c99a1e] hover:text-[#8a6d12]',
+} as const
+
+const PILL_ICON_TONE = { green: 'text-[#1f9d57]', gold: 'text-[#c99a1e]' } as const
+
 /** Shares a generated result-card image: native file share on mobile (→ WhatsApp /
  *  Instagram / etc.), falling back to opening the PNG in a new tab so the user can
  *  save it. Kept resilient — any capability gap or error lands on the open-tab path. */
-export function ShareImageButton({ imagePath, title, text, filename, label = 'Result card', variant = 'pill', className }: Props) {
+export function ShareImageButton({ imagePath, title, text, filename, label = 'Result card', tone = 'green', variant = 'pill', className }: Props) {
   const [busy, setBusy] = useState(false)
 
   const shareCard = async () => {
@@ -74,12 +83,14 @@ export function ShareImageButton({ imagePath, title, text, filename, label = 'Re
       type="button"
       onClick={shareCard}
       disabled={busy}
+      aria-label={`Share ${label.toLowerCase()}`}
       className={cn(
-        'flex items-center gap-1.5 rounded-full border border-[#d8d4c8] bg-white px-3 py-1.5 text-xs font-bold text-[#16150f] transition-colors hover:border-[#1f9d57] hover:text-[#0f5a30] disabled:opacity-50',
+        'flex items-center gap-1.5 rounded-full border border-[#d8d4c8] bg-white px-3 py-1.5 text-xs font-bold text-[#16150f] transition-colors disabled:opacity-50',
+        PILL_TONE[tone],
         className
       )}
     >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageDown className="h-3.5 w-3.5 text-[#1f9d57]" />}
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageDown className={cn('h-3.5 w-3.5', PILL_ICON_TONE[tone])} />}
       {label}
     </button>
   )
