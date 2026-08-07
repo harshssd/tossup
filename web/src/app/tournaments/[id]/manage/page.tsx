@@ -255,9 +255,6 @@ export default function ManageTournamentPage() {
         </form>
       </section>
 
-      {/* Premium: player auction night (hand-off to the auction tool) */}
-      <AuctionNightCard />
-
       {/* Fixtures */}
       <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
         <h2 className="cy-display text-xl font-semibold text-[#16150f]">Fixtures</h2>
@@ -315,6 +312,9 @@ export default function ManageTournamentPage() {
 
       {/* Conclude → verified honors */}
       <ConcludeSection league={league} teams={teams} standings={standings} onDone={load} />
+
+      {/* Optional add-on: player auction night (hand-off to the separate auction tool) */}
+      <AuctionNightCard />
     </div>
     </PlatformShell>
   )
