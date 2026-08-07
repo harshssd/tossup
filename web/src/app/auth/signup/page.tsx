@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { postAuthDestination } from '@/lib/auth-redirect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -75,7 +76,7 @@ export default function SignUpPage() {
         setSuccess('Please check your email for a verification link before signing in.')
       } else if (data.session) {
         toast.success('Account created successfully!')
-        router.push('/home')
+        router.push(postAuthDestination(window.location.search))
       }
     } catch (error) {
       console.error('Sign up error:', error)
