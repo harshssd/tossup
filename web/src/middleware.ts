@@ -68,6 +68,9 @@ function isPublicRoute(pathname: string): boolean {
   // is the retirement target for the legacy /dashboard. Exact match — it has no
   // subroutes, and a prefix would over-match e.g. /homework.
   if (pathname === '/home') return true
+  // The notification inbox is client-gated to the PLATFORM user (shows its own
+  // sign-in prompt); keep the legacy middleware from bouncing it to /auth/signin.
+  if (pathname === '/notifications') return true
 
   // Prefix-match routes (all subpaths are public)
   const publicPrefixes = [
