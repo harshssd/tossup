@@ -11,6 +11,8 @@ import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
 import { formatPlace } from '@/lib/platform/format'
 import { getPlayerHonors } from '@/lib/platform/honors'
+import { ReputationCard } from '@/components/platform/ReputationCard'
+import type { ReputationSignals } from '@/lib/platform/reputation-signals'
 
 const HONOR_DOT: Record<string, string> = {
   CHAMPION: '#f4c430',
@@ -86,6 +88,8 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           <Search className="h-3 w-3" /> Looking for a club
         </Badge>
       )}
+
+      <ReputationCard score={player.reputation_score} signals={player.reputation_signals as ReputationSignals | null} />
 
       {honors.length > 0 && (
         <section className="mt-6">
