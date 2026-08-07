@@ -11,7 +11,13 @@ jest.mock('@/lib/platform/auth-browser', () => {
   const mockPlatformClient = {
     auth: {
       onAuthStateChange: jest.fn(),
+      // NotificationBell (mounted in PlatformAuthNav) resolves the user itself;
+      // null here → the bell renders nothing, leaving the avatar assertion intact.
+      getUser: jest.fn().mockResolvedValue({ data: { user: null } }),
     },
+    from: jest.fn(),
+    channel: jest.fn(() => ({ on: jest.fn().mockReturnThis(), subscribe: jest.fn() })),
+    removeChannel: jest.fn(),
   }
   return {
     createPlatformBrowserClient: jest.fn(() => mockPlatformClient),
@@ -52,6 +58,11 @@ describe('Home Page (platform landing)', () => {
         return { data: { subscription: { unsubscribe: jest.fn() } } }
       }
     )
+    // NotificationBell (mounted in PlatformAuthNav) resolves the user itself;
+    // resetMocks clears the factory default, so re-establish it here. Null user →
+    // the bell renders nothing, leaving the avatar/sign-in assertions intact.
+    mockClient.auth.getUser.mockResolvedValue({ data: { user: null } })
+    mockClient.channel.mockReturnValue({ on: jest.fn().mockReturnThis(), subscribe: jest.fn() })
   })
 
   describe('Brand and hero', () => {
