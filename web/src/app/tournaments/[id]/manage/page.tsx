@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { StandingsTable } from '@/components/platform/StandingsTable'
 import { Pavilion } from '@/components/platform/Pavilion'
 import { PlatformShell } from '@/components/platform/PlatformShell'
+import { AuctionNightCard } from '@/components/platform/AuctionNightCard'
 import {
   approveRegistration,
   concludeTournament,
@@ -253,6 +254,9 @@ export default function ManageTournamentPage() {
           <Button type="submit" size="sm" className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">Add team</Button>
         </form>
       </section>
+
+      {/* Premium: player auction night (hand-off to the auction tool) */}
+      <AuctionNightCard />
 
       {/* Fixtures */}
       <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
