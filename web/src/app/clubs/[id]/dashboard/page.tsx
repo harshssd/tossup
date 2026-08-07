@@ -317,7 +317,7 @@ export default function ClubsDashboard() {
       if (error) throw error
 
       toast.success('Club deleted successfully')
-      router.push('/dashboard')
+      router.push('/home')
     } catch (error) {
       console.error('Failed to delete club:', error)
       toast.error('Failed to delete club')
@@ -341,7 +341,7 @@ export default function ClubsDashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-xl font-semibold text-foreground mb-4">Club not found</h1>
-          <Link href="/dashboard">
+          <Link href="/home">
             <Button>Back to Dashboard</Button>
           </Link>
         </div>
@@ -356,7 +356,7 @@ export default function ClubsDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
+              <Link href="/home">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Dashboard
