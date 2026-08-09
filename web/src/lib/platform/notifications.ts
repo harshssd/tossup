@@ -1,7 +1,7 @@
 // Platform notifications — shared types + pure helpers (no client deps, so this
 // is unit-testable and importable from both the bell and the client wrapper).
 
-export type NotificationKind = 'CLUB_JOIN_APPROVED' | 'CLUB_JOIN_REJECTED' | 'EVENT_REMINDER' | 'GENERIC'
+export type NotificationKind = 'CLUB_JOIN_APPROVED' | 'CLUB_JOIN_REJECTED' | 'EVENT_REMINDER' | 'DIGEST' | 'GENERIC'
 
 export interface AppNotification {
   id: string
@@ -19,6 +19,7 @@ export const NOTIFICATION_META: Record<NotificationKind, { label: string; dot: s
   CLUB_JOIN_APPROVED: { label: 'Club', dot: '#1f9d57' },
   CLUB_JOIN_REJECTED: { label: 'Club', dot: '#9a978d' },
   EVENT_REMINDER: { label: 'Event', dot: '#2257b3' },
+  DIGEST: { label: 'Digest', dot: '#1f9d57' },
   GENERIC: { label: 'TossUp', dot: '#6f6c63' },
 }
 
