@@ -25,6 +25,9 @@ DECLARE
   v_ann int;
   v_parts text[];
 BEGIN
+  -- Serialize concurrent invocations (cron + a manual run) so the per-user
+  -- dedup check → notify() can't race into a double-send.
+  PERFORM pg_advisory_xact_lock(hashtext('send_follows_digest'));
   FOR r IN SELECT DISTINCT user_id FROM public.follows LOOP
     -- Dedup: at most one digest per user per ~week.
     IF EXISTS (
@@ -53,8 +56,11 @@ BEGIN
       (SELECT count(*) FROM public.fixtures fx
          WHERE fx.league_id IN (SELECT scope_id FROM fl)
            AND fx.status = 'COMPLETED' AND fx.updated_at >= now() - interval '7 days'),
+      -- Only true ANNOUNCEMENT posts: SCHEDULE/RESULT/ALERT would mislabel as
+      -- "announcements" and a RESULT post would double-count with the fixture
+      -- results above.
       (SELECT count(*) FROM public.tournament_posts p
-         WHERE p.kind IN ('ANNOUNCEMENT', 'SCHEDULE', 'RESULT', 'ALERT')
+         WHERE p.kind = 'ANNOUNCEMENT'
            AND p.created_at >= now() - interval '7 days'
            AND (p.expires_at IS NULL OR p.expires_at > now())
            AND (p.club_id IN (SELECT scope_id FROM fc) OR p.league_id IN (SELECT scope_id FROM fl)))
