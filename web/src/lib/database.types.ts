@@ -322,7 +322,7 @@ export type Database = {
       post_kind: "ANNOUNCEMENT" | "SCHEDULE" | "RESULT" | "ALERT" | "GENERAL" | "FLAG"
       post_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       flag_status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED"
-      notification_kind: "CLUB_JOIN_APPROVED" | "CLUB_JOIN_REJECTED" | "EVENT_REMINDER" | "GENERIC"
+      notification_kind: "CLUB_JOIN_APPROVED" | "CLUB_JOIN_REJECTED" | "EVENT_REMINDER" | "DIGEST" | "GENERIC"
     }
     CompositeTypes: Record<string, never>
   }
