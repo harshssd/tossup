@@ -6,7 +6,13 @@ export async function geocode(query: string): Promise<{ lat: number; lng: number
   const q = query.trim()
   if (q.length < 2) return null
   try {
-    const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)
+    // Cap the wait so a stalled request never blocks club creation (the route is
+    // itself best-effort; on timeout we just proceed without coords).
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`, { signal: controller.signal }).finally(() =>
+      clearTimeout(timer)
+    )
     if (!res.ok) return null
     const data = (await res.json()) as { lat?: number; lng?: number }
     if (typeof data.lat === 'number' && typeof data.lng === 'number') {

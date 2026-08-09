@@ -11,7 +11,10 @@ describe('geocode', () => {
   it('returns coords from the proxy', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ lat: 37.77, lng: -122.42 }) })
     expect(await geocode('San Francisco, US')).toEqual({ lat: 37.77, lng: -122.42 })
-    expect(fetchMock).toHaveBeenCalledWith('/api/geocode?q=San%20Francisco%2C%20US')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/geocode?q=San%20Francisco%2C%20US',
+      expect.objectContaining({ signal: expect.anything() })
+    )
   })
 
   it('returns null for a too-short query without calling the API', async () => {

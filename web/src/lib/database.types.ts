@@ -285,6 +285,7 @@ export type Database = {
       follower_count: { Args: { p_scope: string; p_scope_id: string }; Returns: number }
       request_reputation_recompute: { Args: Record<string, never>; Returns: undefined }
       clubs_near: { Args: { p_lat: number; p_lng: number; p_limit?: number }; Returns: Database["public"]["Tables"]["clubs"]["Row"][] }
+      claim_geocode_slot: { Args: Record<string, never>; Returns: boolean }
       is_scope_admin: { Args: { p_user: string; p_scope: string; p_scope_id: string }; Returns: boolean }
       approve_tournament_registration: { Args: { p_reg_id: string }; Returns: string }
       add_club_member: { Args: { p_club_id: string; p_display_name: string; p_role?: string }; Returns: string }

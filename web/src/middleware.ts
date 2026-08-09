@@ -71,6 +71,9 @@ function isPublicRoute(pathname: string): boolean {
   // The notification inbox is client-gated to the PLATFORM user (shows its own
   // sign-in prompt); keep the legacy middleware from bouncing it to /auth/signin.
   if (pathname === '/notifications') return true
+  // Geocode proxy self-authorizes via the PLATFORM session (getPlatformUser),
+  // invisible to the legacy auth gate. Exact match — it has no subpaths.
+  if (pathname === '/api/geocode') return true
 
   // Prefix-match routes (all subpaths are public)
   const publicPrefixes = [
@@ -92,9 +95,6 @@ function isPublicRoute(pathname: string): boolean {
     '/account',
     '/api/health',
     '/api/auth',
-    // Geocode proxy self-authorizes via the PLATFORM session (getPlatformUser),
-    // which the legacy middleware auth gate can't see — let it through here.
-    '/api/geocode',
   ]
 
   return publicPrefixes.some(prefix => pathname.startsWith(prefix)) ||
