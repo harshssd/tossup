@@ -2,6 +2,9 @@
 
 import { createPlatformBrowserClient } from './auth-browser'
 import type { Club } from './queries'
+import { buildPlaceQuery } from './geo'
+import { geocode } from './geocode-client'
+import { COUNTRIES } from './recognition'
 
 // Club ownership + roster admin. Runs as the authenticated user so the Phase 5
 // is_scope_admin RLS admits these writes; RLS (not these helpers) is the gate.
@@ -22,10 +25,23 @@ export async function createOwnedClub(input: Partial<Club> & { name: string }): 
   } = await supabase.auth.getUser()
   if (!user) throw new Error('You must be signed in to register a club')
 
-  const slug = uniqueSlug(input.name)
+  // Best-effort geocode the location on save (free OSM Nominatim) so the club
+  // shows up in "clubs near me". Skipped if coords were passed in or the geocode
+  // fails — club creation never blocks on it.
+  let insert: Partial<Club> & { name: string } = input
+  if (input.latitude == null && input.longitude == null) {
+    const countryName = COUNTRIES.find((c) => c.code === input.country)?.name ?? input.country ?? null
+    const q = buildPlaceQuery(input.city, input.region, countryName)
+    if (q) {
+      const coords = await geocode(q)
+      if (coords) insert = { ...input, latitude: coords.lat, longitude: coords.lng }
+    }
+  }
+
+  const slug = uniqueSlug(insert.name)
   const { data: club, error } = await supabase
     .from('clubs')
-    .insert({ ...input, slug, owner_id: user.id })
+    .insert({ ...insert, slug, owner_id: user.id })
     .select()
     .single()
   if (error) throw new Error(error.message)

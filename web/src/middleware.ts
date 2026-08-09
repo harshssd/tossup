@@ -92,6 +92,9 @@ function isPublicRoute(pathname: string): boolean {
     '/account',
     '/api/health',
     '/api/auth',
+    // Geocode proxy self-authorizes via the PLATFORM session (getPlatformUser),
+    // which the legacy middleware auth gate can't see — let it through here.
+    '/api/geocode',
   ]
 
   return publicPrefixes.some(prefix => pathname.startsWith(prefix)) ||
