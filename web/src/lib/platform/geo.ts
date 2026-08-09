@@ -29,6 +29,20 @@ export function parseNearParam(value: string | undefined | null): { lat: number;
   return { lat, lng }
 }
 
+/** Build a geocoder query string from place parts (city, region, country NAME —
+ *  not code), trimmed and comma-joined, most-specific first. Empty when there's
+ *  nothing to geocode. Pure. */
+export function buildPlaceQuery(
+  city?: string | null,
+  region?: string | null,
+  country?: string | null
+): string {
+  return [city, region, country]
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter(Boolean)
+    .join(', ')
+}
+
 /** Human-friendly distance label: metres under 1 km, one decimal under 10 km,
  *  whole km up to a cap. Empty for a non-finite/negative value. */
 export function formatDistance(km: number): string {

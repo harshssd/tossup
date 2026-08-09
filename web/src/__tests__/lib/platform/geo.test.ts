@@ -1,4 +1,4 @@
-import { kmBetween, parseNearParam, formatDistance } from '@/lib/platform/geo'
+import { kmBetween, parseNearParam, formatDistance, buildPlaceQuery } from '@/lib/platform/geo'
 
 describe('kmBetween', () => {
   it('is ~0 for identical points', () => {
@@ -52,5 +52,16 @@ describe('formatDistance', () => {
   it('is empty for a non-finite / negative value', () => {
     expect(formatDistance(NaN)).toBe('')
     expect(formatDistance(-5)).toBe('')
+  })
+})
+
+describe('buildPlaceQuery', () => {
+  it('joins present parts most-specific first, trimmed', () => {
+    expect(buildPlaceQuery('  Bengaluru ', 'Karnataka', 'India')).toBe('Bengaluru, Karnataka, India')
+  })
+  it('drops empty/null/whitespace parts', () => {
+    expect(buildPlaceQuery('Seattle', null, 'United States')).toBe('Seattle, United States')
+    expect(buildPlaceQuery('', '  ', undefined)).toBe('')
+    expect(buildPlaceQuery(null, 'Texas', null)).toBe('Texas')
   })
 })
