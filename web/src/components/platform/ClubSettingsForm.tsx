@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,8 +14,7 @@ const selectCls =
 /** Club Settings (2026-08 audit U3): every field from the create form is now
  *  editable post-creation — most importantly `is_recruiting`/`roles_needed`,
  *  the club's discovery lever, which previously could never be changed. */
-export function ClubSettingsForm({ clubId }: { clubId: string }) {
-  const router = useRouter()
+export function ClubSettingsForm({ clubId, onSaved }: { clubId: string; onSaved?: () => Promise<void> | void }) {
   const [values, setValues] = useState<ClubSettingsPatch | null>(null)
   const [roles, setRoles] = useState<string[]>([])
   const [recruiting, setRecruiting] = useState(false)
@@ -66,7 +64,10 @@ export function ClubSettingsForm({ clubId }: { clubId: string }) {
         roles_needed: recruiting ? roles : [],
       })
       toast.success('Club settings saved')
-      router.refresh()
+      // The manage page is client-rendered — refresh its own club state (the
+      // breadcrumb/name) rather than router.refresh(), which only re-renders
+      // server components (review PR-2).
+      await onSaved?.()
     } catch (err) {
       toast.error((err as Error).message)
     } finally {

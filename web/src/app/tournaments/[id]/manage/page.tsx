@@ -22,6 +22,7 @@ import {
   hostDeleteTeam,
   hostSaveFixtureResult,
   hostUpdateTeam,
+  teamHasRecordedResults,
   updateTournamentSettings,
   rejectRegistration,
 } from '@/lib/platform/tournament-host'
@@ -136,8 +137,14 @@ export default function ManageTournamentPage() {
   }
 
   async function onDeleteTeam(t: TournamentTeam) {
-    if (!confirm(`Remove "${t.name}"? Its fixtures keep the recorded name but lose the link.`)) return
     try {
+      // Deleting a team with recorded results silently rewrites the standings
+      // (winner FK nulls) and can un-record a champion — block it (review PR-2).
+      if (await teamHasRecordedResults(id, t.id)) {
+        toast.error(`"${t.name}" has recorded results or a title — its matches would vanish from the standings. Edit the team instead of deleting it.`)
+        return
+      }
+      if (!confirm(`Remove "${t.name}"? Its scheduled fixtures keep the recorded name but lose the link.`)) return
       await hostDeleteTeam(t.id)
       toast.success('Team removed')
       load()
@@ -391,7 +398,7 @@ export default function ManageTournamentPage() {
   )
 }
 
-function SettingsSection({ league, onSaved }: { league: League; onSaved: () => void }) {
+function SettingsSection({ league, onSaved }: { league: League; onSaved: () => Promise<void> | void }) {
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState(false)
   const isOpen = league.registration_status === 'OPEN'
@@ -401,7 +408,9 @@ function SettingsSection({ league, onSaved }: { league: League; onSaved: () => v
     try {
       await updateTournamentSettings(league.id, { registration_status: isOpen ? 'CLOSED' : 'OPEN' })
       toast.success(isOpen ? 'Registration closed' : 'Registration is OPEN — share your public page so teams can sign up')
-      onSaved()
+      // Await the reload so the button label reflects the new state before it
+      // re-enables (a fast second click could otherwise send the reverse toggle).
+      await onSaved()
     } catch (err) {
       toast.error((err as Error).message)
     } finally {
@@ -427,7 +436,7 @@ function SettingsSection({ league, onSaved }: { league: League; onSaved: () => v
         max_teams: f.get('max_teams') ? Number(f.get('max_teams')) : null,
       })
       toast.success('Tournament settings saved')
-      onSaved()
+      await onSaved()
     } catch (err) {
       toast.error((err as Error).message)
     } finally {

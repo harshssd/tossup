@@ -100,6 +100,12 @@ export async function updateClubSettings(clubId: string, patch: ClubSettingsPatc
         safe.latitude = coords.lat
         safe.longitude = coords.lng
       }
+      // Lookup failure: keep the old coords (best-effort; location text still saves).
+    } else {
+      // Location cleared entirely — stale coords must not keep the club ranking
+      // in "clubs near me" at a place it no longer claims (review PR-2).
+      safe.latitude = null
+      safe.longitude = null
     }
   }
 

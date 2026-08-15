@@ -90,6 +90,13 @@ export default function ManageClubPage() {
   const [events, setEvents] = useState<EventWithCounts[]>([])
   const [leagues, setLeagues] = useState<ClubLeague[]>([])
 
+  const reloadClub = useCallback(async () => {
+    if (!club) return
+    const supabase = createPlatformBrowserClient()
+    const { data: c } = await supabase.from('clubs').select('id, name').eq('id', club.id).maybeSingle()
+    if (c) setClub(c)
+  }, [club])
+
   const loadRoster = useCallback(async () => {
     if (!club) return
     try {
@@ -303,7 +310,7 @@ export default function ManageClubPage() {
         <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">Club settings</h2>
           <p className="mt-1 text-sm text-[#6f6c63]">Name, location, contact — and whether you&apos;re recruiting (that&apos;s what puts you on the Discover recruiting board).</p>
-          {club && <ClubSettingsForm clubId={club.id} />}
+          {club && <ClubSettingsForm clubId={club.id} onSaved={reloadClub} />}
         </section>
 
         {/* Branding */}

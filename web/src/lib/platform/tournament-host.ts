@@ -98,7 +98,9 @@ export async function hostDeleteFixture(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
-/** Rename a team / fix its contact details. RLS: league admins only. */
+/** Rename a team / fix its contact details. RLS: league admins only. A rename
+ *  also updates the denormalized team names on existing fixtures so the manage
+ *  and public pages stay consistent (review PR-2). */
 export async function hostUpdateTeam(
   id: string,
   patch: { name?: string; captain_name?: string | null; contact_phone?: string | null }
@@ -106,6 +108,30 @@ export async function hostUpdateTeam(
   const supabase = createPlatformBrowserClient()
   const { error } = await supabase.from('tournament_teams').update(patch).eq('id', id)
   if (error) throw new Error(error.message)
+  if (patch.name) {
+    const [a, b] = await Promise.all([
+      supabase.from('fixtures').update({ team_a_name: patch.name }).eq('team_a_id', id),
+      supabase.from('fixtures').update({ team_b_name: patch.name }).eq('team_b_id', id),
+    ])
+    if (a.error) throw new Error(a.error.message)
+    if (b.error) throw new Error(b.error.message)
+  }
+}
+
+/** Whether a team has recorded results or a recorded title — deleting it then
+ *  would silently rewrite standings / un-record the champion (review PR-2). */
+export async function teamHasRecordedResults(leagueId: string, teamId: string): Promise<boolean> {
+  const supabase = createPlatformBrowserClient()
+  const [{ count }, { data: lg }] = await Promise.all([
+    supabase
+      .from('fixtures')
+      .select('id', { count: 'exact', head: true })
+      .eq('league_id', leagueId)
+      .eq('status', 'COMPLETED')
+      .or(`team_a_id.eq.${teamId},team_b_id.eq.${teamId}`),
+    supabase.from('leagues').select('champion_team_id, runner_up_team_id').eq('id', leagueId).maybeSingle(),
+  ])
+  return (count ?? 0) > 0 || lg?.champion_team_id === teamId || lg?.runner_up_team_id === teamId
 }
 
 /** Remove a team (added by mistake). RLS: league admins only. */

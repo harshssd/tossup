@@ -19,7 +19,9 @@ export default async function AccountPage() {
   const supabase = await createPlatformServerClient()
   const [{ data: adminClubs }, { data: myTournaments }] = await Promise.all([
     supabase.rpc('list_my_admin_clubs'),
-    supabase.from('leagues').select('id, name, registration_status').eq('owner_id', user.id).order('created_at', { ascending: false }).limit(20),
+    // is_scope_admin semantics (matches the manage gate) — includes non-owner
+    // co-hosts, not just owner_id (review PR-2).
+    supabase.rpc('list_my_admin_leagues'),
   ])
 
   return (
