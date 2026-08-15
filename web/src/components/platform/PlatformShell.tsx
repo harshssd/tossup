@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Compass, Plus, Shield, Newspaper } from 'lucide-react'
+import { Plus, Shield } from 'lucide-react'
+import { MobileNav } from './MobileNav'
 import { CricketBall } from './CricketBall'
 import { PlatformAuthNav } from './PlatformAuthNav'
 
@@ -28,20 +29,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <nav className="flex items-center gap-1.5">
-            {/* On small screens the type links collapse into Feed + Discover entries. */}
-            <Link
-              href="/home"
-              aria-label="Your feed"
-              className="flex items-center rounded-full p-2 text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:hidden"
-            >
-              <Newspaper className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/discover"
-              className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:hidden"
-            >
-              <Compass className="h-4 w-4" /> Discover
-            </Link>
+            {/* Small screens get the full link set via the menu (audit U10). */}
+            <MobileNav />
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -59,7 +48,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </Link>
             <Link
               href="/tournaments/new"
-              className="flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_22px_-10px_rgba(31,157,87,0.8)] transition-colors hover:bg-[#0f5a30]"
+              className="hidden items-center gap-1.5 rounded-full bg-[#1f9d57] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_22px_-10px_rgba(31,157,87,0.8)] transition-colors hover:bg-[#0f5a30] sm:flex"
             >
               <Plus className="h-4 w-4" /> Host
             </Link>
