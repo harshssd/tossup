@@ -76,7 +76,7 @@ export default function SignUpPage() {
         setSuccess('Please check your email for a verification link before signing in.')
       } else if (data.session) {
         toast.success('Account created successfully!')
-        router.push(postAuthDestination(window.location.search))
+        router.push(postAuthDestination(window.location.search, '/auctions'))
       }
     } catch (error) {
       console.error('Sign up error:', error)
@@ -92,7 +92,7 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${location.origin}/auth/callback`
+          redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(postAuthDestination(window.location.search, '/auctions'))}`
         }
       })
 

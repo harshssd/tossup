@@ -273,7 +273,9 @@ describe('SignUp Page', () => {
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Account created successfully!')
         // Phase F: legacy /dashboard retired → land on the platform home feed.
-        expect(mockPush).toHaveBeenCalledWith('/home')
+        // Audit U2: legacy (auction-project) auth lands on the auction hub —
+        // /home is a PLATFORM page that would just show its sign-in gate.
+        expect(mockPush).toHaveBeenCalledWith('/auctions')
       })
     })
   })
@@ -341,7 +343,7 @@ describe('SignUp Page', () => {
       expect(mockSignInWithOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: {
-          redirectTo: `${location.origin}/auth/callback`
+          redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent('/auctions')}`
         }
       })
     })

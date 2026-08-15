@@ -35,8 +35,14 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Phase F: legacy /dashboard retired → land on the platform home feed.
-      return NextResponse.redirect(`${requestUrl.origin}/home`)
+      // Land back where the user was headed (?next=, threaded through the OAuth
+      // round-trip), else the auction hub — this is the AUCTION project's session,
+      // so a platform page like /home would just show its sign-in gate (audit U2).
+      const next = requestUrl.searchParams.get('next')
+      // Same-origin relative paths only — reject `//` AND backslash variants
+      // (`/\evil.com` parses cross-origin under WHATWG URL rules).
+      const dest = next && /^\/(?![/\\])/.test(next) && !/[\\\n\r\t]/.test(next) ? next : '/auctions'
+      return NextResponse.redirect(`${requestUrl.origin}${dest}`)
     } catch (error) {
       console.error('Callback processing error:', error)
       return NextResponse.redirect(

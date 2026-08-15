@@ -56,6 +56,9 @@ export function StartWizard({ personId, initial }: { personId: string; initial: 
       await updateOwnedProfile(personId, onboardingProfileFields({ city, region, country, role, availability }))
       const clubs = await listClubs({
         recruiting: true,
+        // City feeds the text search (matches club name/city/region/location) so a
+        // city-only signup gets local results, not every recruiting club worldwide.
+        q: city.trim() || undefined,
         region: region.trim() || undefined,
         country: country || undefined,
       })

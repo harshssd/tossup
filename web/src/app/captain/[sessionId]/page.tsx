@@ -335,7 +335,7 @@ function TeamSelectionScreen({
             <Crown className="h-7 w-7 text-amber-400" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">Select a Team</h1>
-          <p className="text-sm text-white/40">Choose which team's captain dashboard to view</p>
+          <p className="text-sm text-white/40">Choose which team&apos;s captain dashboard to view</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -489,7 +489,7 @@ export default function CaptainDashboardPage() {
           <div className="max-w-[1400px] mx-auto flex items-center justify-center gap-2 text-xs text-amber-400">
             <Eye className="h-3 w-3" />
             <span>
-              Viewing as <strong>{session.accessRole === 'AUCTION_OWNER' ? 'Auction Owner' : 'Auction Admin'}</strong> — {team.name}'s captain dashboard
+              Viewing as <strong>{session.accessRole === 'AUCTION_OWNER' ? 'Auction Owner' : 'Auction Admin'}</strong> — {team.name}&apos;s captain dashboard
             </span>
           </div>
         </div>
@@ -1228,16 +1228,16 @@ export default function CaptainDashboardPage() {
                 {session.isAdminViewing && (
                   <div className="flex items-center gap-2 text-amber-400/70">
                     <Crown className="h-3 w-3" />
-                    <span>Admin viewing captain's dashboard</span>
+                    <span>Admin viewing captain&apos;s dashboard</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
                   <Eye className="h-3 w-3 text-white/30" />
-                  <span>Only this team's data is visible</span>
+                  <span>Only this team&apos;s data is visible</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Swords className="h-3 w-3 text-white/30" />
-                  <span>Other teams' bids are sealed</span>
+                  <span>Other teams&apos; bids are sealed</span>
                 </div>
               </div>
             </div>

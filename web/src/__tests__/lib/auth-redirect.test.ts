@@ -17,6 +17,12 @@ describe('postAuthDestination', () => {
     expect(postAuthDestination('?redirect=javascript:alert(1)')).toBe('/home')
   })
 
+  it('rejects backslash and control-character variants (WHATWG parses \\ as /)', () => {
+    expect(postAuthDestination('?redirect=' + encodeURIComponent('/\\evil.com'))).toBe('/home')
+    expect(postAuthDestination('?redirect=' + encodeURIComponent('/a\\..\\evil'))).toBe('/home')
+    expect(postAuthDestination('?redirect=' + encodeURIComponent('/ok\npath'))).toBe('/home')
+  })
+
   it('honors a custom fallback', () => {
     expect(postAuthDestination('', '/discover')).toBe('/discover')
   })

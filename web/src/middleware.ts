@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
+import { isPublicRoute, PERMISSIONS_POLICY } from '@/lib/route-gates'
 
 // The embed widget (/embed/*) renders read-only PUBLIC club data and is meant to
 // be iframed on third-party club websites, so it opts out of the frame-busting
@@ -43,7 +44,7 @@ function addSecurityHeaders(response: NextResponse, pathname: string): NextRespo
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+  response.headers.set('Permissions-Policy', PERMISSIONS_POLICY)
 
   // HSTS for production
   if (process.env.NODE_ENV === 'production') {
@@ -59,48 +60,6 @@ function addSecurityHeaders(response: NextResponse, pathname: string): NextRespo
 
 function isApiRoute(pathname: string): boolean {
   return pathname.startsWith('/api/')
-}
-
-function isPublicRoute(pathname: string): boolean {
-  // Exact-match routes
-  if (pathname === '/') return true
-  // The follows feed renders a signed-out gate (never bounce it to sign-in) and
-  // is the retirement target for the legacy /dashboard. Exact match — it has no
-  // subroutes, and a prefix would over-match e.g. /homework.
-  if (pathname === '/home') return true
-  // The notification inbox is client-gated to the PLATFORM user (shows its own
-  // sign-in prompt); keep the legacy middleware from bouncing it to /auth/signin.
-  if (pathname === '/notifications') return true
-  // Geocode proxy self-authorizes via the PLATFORM session (getPlatformUser),
-  // invisible to the legacy auth gate. Exact match — it has no subpaths.
-  if (pathname === '/api/geocode') return true
-
-  // Prefix-match routes (all subpaths are public)
-  const publicPrefixes = [
-    '/auth/',
-    '/login',
-    '/signup',
-    '/forgot-password',
-    '/reset-password',
-    '/live',
-    '/tournament',
-    // Platform (community/discovery) public surfaces. Trailing slashes on
-    // /club/ and /player/ avoid exposing the legacy /clubs dashboard route.
-    '/discover',
-    '/club/',
-    '/player/',
-    // The embeddable club widget is anonymous (iframed on third-party sites) —
-    // never redirect it to sign-in.
-    '/embed/',
-    '/account',
-    '/api/health',
-    '/api/auth',
-  ]
-
-  return publicPrefixes.some(prefix => pathname.startsWith(prefix)) ||
-         pathname.includes('/public/') ||
-         pathname.includes('/_next/') ||
-         pathname.includes('/favicon.ico')
 }
 
 export async function middleware(request: NextRequest) {

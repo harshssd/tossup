@@ -23,7 +23,7 @@ export function normalizePlayingRole(raw: string): { role: string; notes: string
   const notes: string[] = []
 
   // Extract parenthetical notes
-  let cleaned = raw.replace(/\(([^)]+)\)/g, (_, note) => {
+  const cleaned = raw.replace(/\(([^)]+)\)/g, (_, note) => {
     notes.push(note.trim())
     return ''
   }).trim()

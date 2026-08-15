@@ -23,7 +23,7 @@ export function AuctionNightCard() {
           <h2 className="cy-display mt-1.5 text-xl font-semibold text-[#16150f]">Player auction night</h2>
           <p className="mt-1 text-sm text-[#5c5849]">
             Want an IPL-style player draft? The auction tool runs live bidding with per-team budgets and captains on
-            their own devices. It&apos;s a separate tool — you set up your auction there.
+            their own devices. It&apos;s a separate tool with its own sign-in — you set up your auction there.
           </p>
           <Link
             href="/auctions"
