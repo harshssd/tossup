@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/discover?tab=clubs', label: 'Clubs' },
   { href: '/tournaments', label: 'Tournaments' },
   { href: '/discover?tab=players', label: 'Players' },
+  { href: '/pricing', label: 'Pricing' },
 ]
 
 // Clubhouse light theme chrome for every platform page. The `clubhouse` class

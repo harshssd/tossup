@@ -18,6 +18,8 @@ export function isPublicRoute(pathname: string): boolean {
   if (pathname === '/api/geocode') return true
   // The onboarding wizard — the landing page's PRIMARY CTA.
   if (pathname === '/start') return true
+  // Public pricing page (transparent-pricing strategy; no subroutes).
+  if (pathname === '/pricing') return true
 
   // Prefix-match routes (all subpaths are public)
   const publicPrefixes = [
