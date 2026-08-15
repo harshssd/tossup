@@ -15,18 +15,24 @@ export function ClubSetupChecklist({ clubId }: { clubId: string }) {
     ;(async () => {
       try {
         const supabase = createPlatformBrowserClient()
-        const [{ data: club }, members, events, announcements, honors] = await Promise.all([
+        const [clubRes, members, events, announcements, honors] = await Promise.all([
           supabase.from('clubs').select('crest_url, description').eq('id', clubId).maybeSingle(),
           supabase.from('club_memberships').select('id', { count: 'exact', head: true }).eq('club_id', clubId),
           supabase.from('club_events').select('id', { count: 'exact', head: true }).eq('club_id', clubId),
-          supabase
-            .from('tournament_posts')
-            .select('id', { count: 'exact', head: true })
-            .eq('club_id', clubId)
-            .eq('kind', 'ANNOUNCEMENT'),
+          // Any club-scoped post counts — the composer also posts SCHEDULE/
+          // RESULT/ALERT kinds, and all of them mean "used the board" (review).
+          supabase.from('tournament_posts').select('id', { count: 'exact', head: true }).eq('club_id', clubId),
           supabase.from('honors').select('id', { count: 'exact', head: true }).eq('club_id', clubId),
         ])
         if (cancelled) return
+        // supabase-js returns {error} rather than throwing — a failed query must
+        // NOT render a false "undone" checklist (count null → 0). Bail instead
+        // (review: the checklist just doesn't render on error).
+        if (clubRes.error || members.error || events.error || announcements.error || honors.error) {
+          console.warn('club checklist: query failed', clubRes.error ?? members.error ?? events.error ?? announcements.error ?? honors.error)
+          return
+        }
+        const club = clubRes.data
         setItems(
           computeChecklist({
             hasCrest: !!club?.crest_url,
@@ -67,7 +73,7 @@ export function ClubSetupChecklist({ clubId }: { clubId: string }) {
         {items.map((it) => (
           <li key={it.key}>
             {it.done ? (
-              <span className="flex items-center gap-2 px-1 py-1 text-sm text-[#9a978d] line-through">
+              <span className="flex items-center gap-2 px-1 py-1 text-sm text-[#6f6c63]">
                 <Check className="h-4 w-4 text-[#1f9d57]" aria-hidden /> {it.label}
               </span>
             ) : (
