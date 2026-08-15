@@ -55,8 +55,10 @@ export default function NewClubPage() {
         is_recruiting: recruiting,
         roles_needed: recruiting ? roles : [],
       })
-      toast.success('Club created')
-      router.push(`/club/${club.slug}`)
+      toast.success('Club created — set it up here')
+      // Land the new organizer on the manage surface (audit U3: dropping them on
+      // the empty public page was the #1 organizer dead-end).
+      router.push(`/club/${club.slug}/manage`)
     } catch (err) {
       toast.error((err as Error).message)
       setSaving(false)

@@ -141,7 +141,7 @@ export default async function ClubProfile({ params }: { params: Promise<{ slug: 
         {canManage && (
           <Link href={`/club/${club.slug}/manage`} className="mt-5 inline-block">
             <Button size="sm" className="gap-1 bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
-              <Settings className="h-4 w-4" /> Manage roster
+              <Settings className="h-4 w-4" /> Manage club
             </Button>
           </Link>
         )}

@@ -75,9 +75,9 @@ for evidence and research backing). Items get checked as fix PRs merge.
 - [x] **C1 (trivial tier)** 244 → 189 lint errors (autofix + entity escapes + purge).
 - [x] **U7/U8 slices** `/home` signed-out sign-in CTA; `/account` profile rows are links.
 
-### Fix PR 2 — organizer self-serve lifecycle (U3, U4)
-- [ ] Club Settings on manage: edit name/description/location/website/contact/`is_recruiting`/`roles_needed`; create → redirect to manage; "Manage club" naming; "Your clubs" on /account.
-- [ ] Tournament Settings on manage: edit name/dates/venue + registration open/close toggle; always-visible Registrations section with shareable public link; fixture edit/delete (wire existing endpoints); team rename/remove.
+### Fix PR 2 — organizer self-serve lifecycle (U3, U4) — ✅ shipped
+- [x] Club Settings on manage (all create-form fields incl. `is_recruiting`/`roles_needed`, re-geocodes on location change); create → manage redirect; "Manage club" naming; "Your clubs" + "Your tournaments" on /account.
+- [x] Tournament Settings on manage (name/dates/venue/max-teams + registration OPEN/CLOSE toggle); Registrations always visible with public-link share hint; team rename/remove; fixture delete.
 
 ### Fix PR 3 — retention loops (U6, U7, U8)
 - [ ] notify() producers: join-request created → club admins; registration decided → registrant; (announcements → members: scoped fan-out decision).

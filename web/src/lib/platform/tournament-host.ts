@@ -91,6 +91,92 @@ export async function hostSaveFixtureResult(id: string, patch: Partial<Fixture>)
   if (error) throw new Error(error.message)
 }
 
+/** Delete a fixture (typo/duplicate cleanup). RLS: league admins only. */
+export async function hostDeleteFixture(id: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('fixtures').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** Rename a team / fix its contact details. RLS: league admins only. A rename
+ *  also updates the denormalized team names on existing fixtures so the manage
+ *  and public pages stay consistent (review PR-2). */
+export async function hostUpdateTeam(
+  id: string,
+  patch: { name?: string; captain_name?: string | null; contact_phone?: string | null }
+): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('tournament_teams').update(patch).eq('id', id)
+  if (error) throw new Error(error.message)
+  if (patch.name) {
+    const [a, b] = await Promise.all([
+      supabase.from('fixtures').update({ team_a_name: patch.name }).eq('team_a_id', id),
+      supabase.from('fixtures').update({ team_b_name: patch.name }).eq('team_b_id', id),
+    ])
+    if (a.error) throw new Error(a.error.message)
+    if (b.error) throw new Error(b.error.message)
+  }
+}
+
+/** Whether a team has recorded results or a recorded title — deleting it then
+ *  would silently rewrite standings / un-record the champion (review PR-2). */
+export async function teamHasRecordedResults(leagueId: string, teamId: string): Promise<boolean> {
+  const supabase = createPlatformBrowserClient()
+  const [{ count }, { data: lg }] = await Promise.all([
+    supabase
+      .from('fixtures')
+      .select('id', { count: 'exact', head: true })
+      .eq('league_id', leagueId)
+      .eq('status', 'COMPLETED')
+      .or(`team_a_id.eq.${teamId},team_b_id.eq.${teamId}`),
+    supabase.from('leagues').select('champion_team_id, runner_up_team_id').eq('id', leagueId).maybeSingle(),
+  ])
+  return (count ?? 0) > 0 || lg?.champion_team_id === teamId || lg?.runner_up_team_id === teamId
+}
+
+/** Remove a team (added by mistake). RLS: league admins only. */
+export async function hostDeleteTeam(id: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('tournament_teams').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** The tournament fields a host may edit post-creation (2026-08 audit U4 — there
+ *  was NO edit surface at all, and registration_status was frozen at UPCOMING so
+ *  self-serve registration was unreachable by default). A whitelist type: trust
+ *  columns (recognition_tier, reputation_*, verified_*) and ownership/scope
+ *  columns (owner_id, club_id, visibility) are deliberately not editable here. */
+export interface TournamentSettingsPatch {
+  name?: string
+  description?: string | null
+  venue?: string | null
+  city?: string | null
+  region?: string | null
+  country?: string | null
+  start_date?: string | null
+  end_date?: string | null
+  max_teams?: number | null
+  format?: string | null
+  registration_status?: 'UPCOMING' | 'OPEN' | 'CLOSED'
+}
+
+const TOURNAMENT_SETTINGS_KEYS: (keyof TournamentSettingsPatch)[] = [
+  'name', 'description', 'venue', 'city', 'region', 'country',
+  'start_date', 'end_date', 'max_teams', 'format', 'registration_status',
+]
+
+/** Update a tournament's editable settings (whitelisted columns only). */
+export async function updateTournamentSettings(leagueId: string, patch: TournamentSettingsPatch): Promise<void> {
+  const safe: Record<string, unknown> = {}
+  for (const k of TOURNAMENT_SETTINGS_KEYS) {
+    if (k in patch) safe[k] = patch[k]
+  }
+  if (Object.keys(safe).length === 0) return
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('leagues').update(safe).eq('id', leagueId)
+  if (error) throw new Error(error.message)
+}
+
 /** Conclude a tournament: record champion (+ optional runner-up) and mint
  *  TOSSUP_VERIFIED honors into the winning clubs' cabinets. Host-only (RPC
  *  self-checks is_scope_admin). Re-callable — it rewrites verified honors.
