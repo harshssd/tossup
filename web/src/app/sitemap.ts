@@ -14,20 +14,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [{ data: clubs }, { data: leagues }, { data: players }] = await Promise.all([
     platformDb
       .from('clubs')
-      .select('slug, created_at')
+      .select('slug, updated_at')
       .eq('visibility', 'PUBLIC')
       .not('slug', 'is', null)
       .order('reputation_score', { ascending: false })
       .limit(CAP),
     platformDb
       .from('leagues')
-      .select('id, created_at')
+      .select('id, updated_at')
       .eq('visibility', 'PUBLIC')
       .order('created_at', { ascending: false })
       .limit(CAP),
     platformDb
       .from('player_profiles')
-      .select('id, created_at')
+      .select('id, updated_at')
       .eq('visibility', 'PUBLIC')
       .is('merged_into_id', null)
       .order('reputation_score', { ascending: false })
@@ -46,16 +46,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...statics,
     ...(clubs ?? []).map((c) => ({
       url: `${SITE_URL}/club/${encodeURIComponent(c.slug as string)}`,
+      lastModified: new Date(c.updated_at),
       changeFrequency: 'daily' as const,
       priority: 0.8,
     })),
     ...(leagues ?? []).map((l) => ({
       url: `${SITE_URL}/tournaments/${l.id}`,
+      lastModified: new Date(l.updated_at),
       changeFrequency: 'daily' as const,
       priority: 0.7,
     })),
     ...(players ?? []).map((p) => ({
       url: `${SITE_URL}/player/${p.id}`,
+      lastModified: new Date(p.updated_at),
       changeFrequency: 'weekly' as const,
       priority: 0.5,
     })),

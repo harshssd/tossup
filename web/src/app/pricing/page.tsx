@@ -13,31 +13,36 @@ export const metadata: Metadata = {
     'Simple, public pricing. Players are free forever — profiles, points tables, and honors never go behind a paywall. Clubs and leagues pay for organizer superpowers.',
 }
 
+// Everything in FREE exists in the product today — this list is verifiable.
 const FREE = [
   'Club page with roster, events & RSVPs',
   'Tournament hosting: registrations → fixtures → standings',
   'Trophy cabinet & verified honors',
   'Player profiles, discovery & "clubs near me"',
   'Share cards for WhatsApp & Instagram',
-  'Follows, feed & notifications',
+  'Follows, feed, notifications & weekly digest',
+  'Club branding: crest, cover photo & accent',
+  'Unlimited co-admins',
+  'Embeddable club widget for your website',
 ]
 
+// The Pro lists are ROADMAP, and the page says so explicitly ("what Pro will
+// add") — presenting planned features as current would defeat the page's whole
+// trust thesis (2026-08 review).
 const CLUB_PRO = [
-  'Everything in Free',
   'Priority placement in Discover',
-  'Club branding everywhere (crest on share cards)',
+  'Your crest on result share-cards',
   'Recognition review fast-track',
-  'Email digests for your members',
+  'Email delivery for member digests',
   'Season archive & exports',
 ]
 
 const LEAGUE_PRO = [
   'Everything in Club Pro',
   'Registrations with custom questions',
-  'Result share-cards with YOUR branding + sponsor strip',
-  'Multiple co-admins',
+  'Sponsor strip on YOUR result share-cards',
+  'Collect team fees online (at-cost + small platform fee)',
   'Exportable standings & records',
-  'Priority support at finals time',
 ]
 
 export default function PricingPage() {
@@ -107,7 +112,8 @@ export default function PricingPage() {
             <p className="mt-4 text-3xl font-bold text-[#16150f]">
               $149<span className="text-sm font-semibold text-[#9a978d]"> / year</span>
             </p>
-            <ul className="mt-5 flex-1 space-y-2.5">
+            <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#9a978d]">What Pro will add</p>
+            <ul className="mt-2 flex-1 space-y-2.5">
               {CLUB_PRO.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-[#3a382f]">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#1f9d57]" aria-hidden /> {f}
@@ -115,8 +121,8 @@ export default function PricingPage() {
               ))}
             </ul>
             <p className="mt-6 rounded-xl bg-[#f6f5f1] px-3 py-2.5 text-center text-xs text-[#6f6c63]">
-              Payments open soon — <strong>founding clubs get their first season free</strong>. Start free today; you
-              keep everything either way.
+              Pro is <strong>in build</strong> — nothing above is live yet. Founding clubs get their first Pro season
+              free when it ships. Start free today; you keep everything either way.
             </p>
           </div>
 
@@ -133,7 +139,8 @@ export default function PricingPage() {
               $299<span className="text-sm font-semibold text-[#9a978d]"> / year</span>
               <span className="ml-2 align-middle text-sm font-semibold text-[#9a978d]">or $39 / tournament</span>
             </p>
-            <ul className="mt-5 flex-1 space-y-2.5">
+            <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#9a978d]">What Pro will add</p>
+            <ul className="mt-2 flex-1 space-y-2.5">
               {LEAGUE_PRO.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-[#3a382f]">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#1f9d57]" aria-hidden /> {f}
@@ -141,8 +148,8 @@ export default function PricingPage() {
               ))}
             </ul>
             <p className="mt-6 rounded-xl bg-[#f6f5f1] px-3 py-2.5 text-center text-xs text-[#6f6c63]">
-              Registration payments (collect team fees online) arrive with payments — priced at cost + a small platform
-              fee, published here when it ships.
+              Pro is <strong>in build</strong> — nothing above is live yet. Founding leagues get their first Pro season
+              free when it ships; the fee schedule for online registration payments will be published on this page.
             </p>
           </div>
         </div>

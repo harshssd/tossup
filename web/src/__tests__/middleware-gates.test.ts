@@ -6,7 +6,7 @@ import { isPublicRoute, PERMISSIONS_POLICY } from '@/lib/route-gates'
 
 describe('isPublicRoute', () => {
   it('keeps the platform self-gating pages out of the legacy auth bounce', () => {
-    for (const p of ['/', '/start', '/home', '/notifications', '/api/geocode', '/pricing']) {
+    for (const p of ['/', '/start', '/home', '/notifications', '/api/geocode', '/pricing', '/sitemap.xml', '/robots.txt']) {
       expect(isPublicRoute(p)).toBe(true)
     }
   })
