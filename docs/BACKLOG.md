@@ -95,8 +95,15 @@ for evidence and research backing). Items get checked as fix PRs merge.
 ### Research-backed strategy items (decisions, then build)
 - [ ] Promote **scorecard ingestion** from parked → next concrete league ask ("ingest, don't score").
 - [ ] **Registration payment rails before SaaS gating** (Stripe Connect; transparent fees).
-- [ ] Publish a **transparent pricing page** (pre-Stripe) — counters CricClubs/TeamSnap sales-gating.
-- [ ] Codify **"never paywall identity"** in PRODUCT_PLAN as a public commitment.
+- [x] Publish a **transparent pricing page** (pre-Stripe) — counters CricClubs/TeamSnap sales-gating (PR #48: `/pricing`, honest "what Pro will add" framing).
+- [x] Codify **"never paywall identity"** in PRODUCT_PLAN as a public commitment (PR #48: /pricing promise block + PRODUCT_PLAN Part 3 reconciled — Free caps dropped, sponsorship excluded from feeds).
+
+## Good-to-great wave (2026-08-15) — ✅ SHIPPED
+
+- [x] **G1** Public `/pricing` page + never-paywall promise; nav/footer links (PR #48).
+- [x] **G2** SEO pack: dynamic sitemap (PUBLIC clubs/tournaments/players, `lastModified`), robots, `metadataBase`/`SITE_URL`; crawler routes made public in route-gates (PR #48 — review caught sitemap/robots bouncing to sign-in).
+- [x] **G3** Club activation checklist on the manage page (6 real-data steps, anchor links, hides at 6/6) (PR #49).
+- [x] **G4** Tournament fixtures calendar: `/api/tournaments/[id]/fixtures.ics` + "Add schedule to calendar" link (PR #49).
 
 ## Parked (do not build speculatively)
 
