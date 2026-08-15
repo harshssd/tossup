@@ -87,7 +87,7 @@ export async function buildHomeFeed(now: number = Date.now()): Promise<{ upcomin
   const liveLeagueIds = [...leagueMap.keys()]
   if (liveClubIds.length === 0 && liveLeagueIds.length === 0) return { upcoming: [], recent: [], followCount: rows.length }
 
-  const [eventsRes, resultsRes, clubPostsRes, leaguePostsRes] = await Promise.all([
+  const [eventsRes, resultsRes, upcomingFixturesRes, clubPostsRes, leaguePostsRes] = await Promise.all([
     liveClubIds.length
       ? platformDb
           .from('club_events')
@@ -104,6 +104,17 @@ export async function buildHomeFeed(now: number = Date.now()): Promise<{ upcomin
           .in('league_id', liveLeagueIds)
           .eq('status', 'COMPLETED')
           .order('updated_at', { ascending: false })
+          .limit(MAX_PER_SOURCE)
+      : Promise.resolve({ data: [] }),
+    liveLeagueIds.length
+      ? platformDb
+          .from('fixtures')
+          .select('id, league_id, team_a_name, team_b_name, venue, scheduled_at')
+          .in('league_id', liveLeagueIds)
+          .eq('status', 'SCHEDULED')
+          .not('scheduled_at', 'is', null)
+          .gte('scheduled_at', nowIso)
+          .order('scheduled_at', { ascending: true })
           .limit(MAX_PER_SOURCE)
       : Promise.resolve({ data: [] }),
     liveClubIds.length
@@ -141,6 +152,23 @@ export async function buildHomeFeed(now: number = Date.now()): Promise<{ upcomin
       sourceHref: `/club/${club.slug ?? club.id}`,
       title: e.title,
       detail,
+    })
+  }
+
+  // "Your team plays Saturday" — the highest-value return trigger (audit U7):
+  // scheduled fixtures from followed tournaments land in Upcoming.
+  for (const f of upcomingFixturesRes.data ?? []) {
+    const league = leagueMap.get(f.league_id)
+    if (!league || !f.scheduled_at) continue
+    items.push({
+      key: `fixture:${f.id}`,
+      type: 'fixture',
+      when: 'upcoming',
+      ts: new Date(f.scheduled_at).getTime(),
+      sourceName: league.name,
+      sourceHref: `/tournaments/${f.league_id}`,
+      title: `${f.team_a_name ?? 'TBD'} vs ${f.team_b_name ?? 'TBD'}`,
+      detail: f.venue ?? null,
     })
   }
 

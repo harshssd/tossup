@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CalendarDays, Trophy, Megaphone, Compass, Heart } from 'lucide-react'
+import { CalendarDays, Trophy, Megaphone, Compass, Heart, Swords } from 'lucide-react'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { getPlatformUser } from '@/lib/platform/auth-server'
 import { buildHomeFeed } from '@/lib/platform/home-feed'
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 const TYPE_META: Record<FeedItem['type'], { icon: typeof CalendarDays; chip: string; label: string }> = {
   event: { icon: CalendarDays, chip: 'bg-[#e7f4ec] text-[#0f5a30]', label: 'Event' },
+  fixture: { icon: Swords, chip: 'bg-[#fcf3d6] text-[#9a6b09]', label: 'Match' },
   result: { icon: Trophy, chip: 'bg-[#fcf3d6] text-[#9a6b09]', label: 'Result' },
   announcement: { icon: Megaphone, chip: 'bg-[#e4eefb] text-[#2257b3]', label: 'Announcement' },
 }

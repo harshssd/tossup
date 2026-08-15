@@ -208,6 +208,9 @@ export function StartWizard({ personId, initial }: { personId: string; initial: 
             <Link href="/discover?tab=clubs" className="font-semibold text-[#6f6c63] hover:text-[#16150f]">
               Explore all clubs
             </Link>
+            <Link href={`/player/${personId}`} className="font-semibold text-[#6f6c63] hover:text-[#16150f]">
+              View your profile →
+            </Link>
           </div>
         </div>
       )}

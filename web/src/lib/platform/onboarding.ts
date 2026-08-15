@@ -7,7 +7,7 @@ import type { PlayerProfile } from './queries'
 export type ProfileEditableFields = Partial<
   Pick<
     PlayerProfile,
-    'display_name' | 'bio' | 'city' | 'region' | 'country' | 'primary_role' | 'availability' | 'looking_for_club' | 'visibility'
+    'display_name' | 'bio' | 'city' | 'region' | 'country' | 'primary_role' | 'availability' | 'looking_for_club' | 'visibility' | 'batting_style' | 'bowling_style' | 'photo'
   >
 >
 
