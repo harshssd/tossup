@@ -36,7 +36,7 @@ describe('unreadBadge', () => {
 
 describe('NOTIFICATION_META', () => {
   it('has an entry for every kind', () => {
-    for (const k of ['CLUB_JOIN_APPROVED', 'CLUB_JOIN_REJECTED', 'EVENT_REMINDER', 'DIGEST', 'GENERIC'] as const) {
+    for (const k of ['CLUB_JOIN_APPROVED', 'CLUB_JOIN_REJECTED', 'CLUB_JOIN_REQUESTED', 'REG_APPROVED', 'REG_REJECTED', 'EVENT_REMINDER', 'DIGEST', 'GENERIC'] as const) {
       expect(NOTIFICATION_META[k]).toBeTruthy()
       expect(NOTIFICATION_META[k].dot).toMatch(/^#[0-9a-f]{6}$/i)
     }

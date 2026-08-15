@@ -10,6 +10,8 @@ import { getPlayer } from '@/lib/platform/queries'
 import { PlatformShell } from '@/components/platform/PlatformShell'
 import { ShareButton } from '@/components/platform/ShareButton'
 import { formatPlace } from '@/lib/platform/format'
+import { getPlatformUser } from '@/lib/platform/auth-server'
+import { Settings } from 'lucide-react'
 import { getPlayerHonors } from '@/lib/platform/honors'
 import { ReputationCard } from '@/components/platform/ReputationCard'
 import type { ReputationSignals } from '@/lib/platform/reputation-signals'
@@ -51,6 +53,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function PlayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const player = await getPlayer(id)
+  const viewer = await getPlatformUser()
+  const isOwner = !!viewer && !!player && player.user_id === viewer.id
   if (!player) notFound()
   // A merged-away Person redirects to the canonical survivor.
   if (player.merged_into_id) redirect(`/player/${player.merged_into_id}`)
@@ -82,6 +86,15 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           path={`/player/${player.id}`}
         />
       </div>
+
+      {isOwner && (
+        <Link
+          href={`/player/${player.id}/edit`}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#d8d4c8] bg-white px-3 py-1.5 text-xs font-bold text-[#16150f] transition-colors hover:border-[#1f9d57] hover:text-[#0f5a30]"
+        >
+          <Settings className="h-3.5 w-3.5" /> Edit your profile
+        </Link>
+      )}
 
       {player.looking_for_club && (
         <Badge className="mt-3 gap-1 bg-[#e7f4ec] text-[#0f5a30]">

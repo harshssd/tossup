@@ -79,11 +79,11 @@ for evidence and research backing). Items get checked as fix PRs merge.
 - [x] Club Settings on manage (all create-form fields incl. `is_recruiting`/`roles_needed`, re-geocodes on location change); create → manage redirect; "Manage club" naming; "Your clubs" + "Your tournaments" on /account.
 - [x] Tournament Settings on manage (name/dates/venue/max-teams + registration OPEN/CLOSE toggle); Registrations always visible with public-link share hint; team rename/remove; fixture delete.
 
-### Fix PR 3 — retention loops (U6, U7, U8)
-- [ ] notify() producers: join-request created → club admins; registration decided → registrant; (announcements → members: scoped fan-out decision).
-- [ ] Auto-follow club on join approval; auto-follow tournament on registration.
-- [ ] SCHEDULED fixtures in the /home "Upcoming" section.
-- [ ] Owner "Edit profile" on player/[id] + edit form; /start upserts the same owned profile as /player/new; wizard exit CTAs.
+### Fix PR 3 — retention loops (U6, U7, U8) — ✅ shipped
+- [x] notify() producers: join-request created → club admins (trigger, manage deep-link); registration decided → registrant (trigger covers approve + reject paths). Announcements→members deferred (fan-out sizing decision).
+- [x] Auto-follow club on join approval (in decide fn) + tournament on registration approval (in trigger), both visibility-gated.
+- [x] SCHEDULED fixtures from followed tournaments in the /home "Upcoming" section ("your team plays Saturday").
+- [x] /player/[id]/edit (owner-gated) + "Edit your profile" affordance; /player/new redirects to the existing profile's edit (no more divergent duplicate identities); wizard ends with a profile CTA.
 
 ### Fix PR 4 — mobile (U10)
 - [ ] Hamburger/sheet nav (all links + "Start a club"); create-form grid breakpoints; StandingsTable `overflow-x-auto`; region filter applies on submit.

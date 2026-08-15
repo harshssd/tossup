@@ -22,18 +22,35 @@ export default function NewPlayerPage() {
 
   useEffect(() => {
     let cancelled = false
-    createPlatformBrowserClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        if (!cancelled) setAuthState(data.user ? 'ok' : 'guest')
-      })
-      .catch(() => {
+    ;(async () => {
+      try {
+        const supabase = createPlatformBrowserClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (cancelled) return
+        if (!user) {
+          setAuthState('guest')
+          return
+        }
+        // Audit U8: /start and /player/new used to mint DIVERGENT duplicate
+        // identities. If this account already has its self-Person, edit that
+        // profile instead of creating a second one.
+        const { data: u } = await supabase.from('users').select('primary_person_id').eq('id', user.id).maybeSingle()
+        if (cancelled) return
+        if (u?.primary_person_id) {
+          router.replace(`/player/${u.primary_person_id}/edit`)
+          return
+        }
+        setAuthState('ok')
+      } catch {
         if (!cancelled) setAuthState('guest')
-      })
+      }
+    })()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

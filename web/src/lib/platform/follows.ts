@@ -10,7 +10,7 @@ export type FollowScope = 'club' | 'league'
  *  same ordering. `key` is stable per source row → dedup + React key. */
 export interface FeedItem {
   key: string
-  type: 'event' | 'result' | 'announcement'
+  type: 'event' | 'result' | 'announcement' | 'fixture'
   when: 'upcoming' | 'recent'
   ts: number
   sourceName: string
