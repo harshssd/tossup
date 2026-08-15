@@ -16,7 +16,9 @@ export function StandingsTable({ rows }: { rows: Standing[] }) {
   }
   return (
     <div className="cy-score overflow-hidden rounded-2xl">
-      <table className="w-full text-sm">
+      {/* 8 columns — must scroll horizontally on phones, not clip (audit U10) */}
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Standings table">
+      <table className="w-full min-w-[560px] text-sm">
         <thead>
           <tr className="text-[10px] uppercase tracking-[0.12em] text-[#8a877d]">
             <th className="px-3 py-2.5 text-left font-bold">#</th>
@@ -55,6 +57,7 @@ export function StandingsTable({ rows }: { rows: Standing[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

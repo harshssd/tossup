@@ -115,7 +115,7 @@ export default function NewPlayerPage() {
         <Field label="Name" required>
           <Input name="display_name" required />
         </Field>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Role">
             <Select name="primary_role">
               <option value="">—</option>
@@ -131,7 +131,7 @@ export default function NewPlayerPage() {
             <Input name="bowling_style" placeholder="Right-arm off" />
           </Field>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Country">
             <Select name="country">
               <option value="">—</option>

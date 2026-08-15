@@ -15,6 +15,7 @@ export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; bas
   const router = useRouter()
   const sp = useSearchParams()
   const [q, setQ] = useState(sp.get('q') ?? '')
+  const [region, setRegion] = useState(sp.get('region') ?? '')
 
   function apply(overrides: Record<string, string>) {
     const params = new URLSearchParams(sp.toString())
@@ -23,7 +24,7 @@ export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; bas
     // Applying any filter exits "clubs near me" — the distance-ranked mode ignores
     // filters, so leaving `near` set would make the controls visibly no-op.
     params.delete('near')
-    for (const [k, v] of Object.entries({ q, ...overrides })) {
+    for (const [k, v] of Object.entries({ q, region, ...overrides })) {
       if (v) params.set(k, v)
       else params.delete(k)
     }
@@ -52,9 +53,11 @@ export function DiscoverFilters({ tab, basePath = '/discover' }: { tab: Tab; bas
           </option>
         ))}
       </select>
+      {/* Applies on Search submit — onBlur silently dropped the value when
+          tapping Search on iOS (audit U10). */}
       <Input
-        defaultValue={sp.get('region') ?? ''}
-        onBlur={(e) => apply({ region: e.target.value })}
+        value={region}
+        onChange={(e) => setRegion(e.target.value)}
         placeholder="State / city"
         className="h-9 w-36"
       />

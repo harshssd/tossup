@@ -121,7 +121,7 @@ export default function NewTournamentPage() {
         <Field label="About">
           <Textarea name="description" rows={2} />
         </Field>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Country">
             <Select name="country">
               <option value="">—</option>
@@ -140,7 +140,7 @@ export default function NewTournamentPage() {
         <Field label="Venue">
           <Input name="venue" />
         </Field>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Start date">
             <Input name="start_date" type="date" />
           </Field>
@@ -161,11 +161,11 @@ export default function NewTournamentPage() {
 
         <div>
           <Label className="mb-1 block text-xs text-muted-foreground">Points (win / tie / loss / no-result)</Label>
-          <div className="grid grid-cols-4 gap-2">
-            <Input name="points_win" type="number" defaultValue={2} />
-            <Input name="points_tie" type="number" defaultValue={1} />
-            <Input name="points_loss" type="number" defaultValue={0} />
-            <Input name="points_noresult" type="number" defaultValue={1} />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Input name="points_win" type="number" defaultValue={2} aria-label="Points for a win" />
+            <Input name="points_tie" type="number" defaultValue={1} aria-label="Points for a tie" />
+            <Input name="points_loss" type="number" defaultValue={0} aria-label="Points for a loss" />
+            <Input name="points_noresult" type="number" defaultValue={1} aria-label="Points for a no-result" />
           </div>
         </div>
         <Field label="Rules (optional)">

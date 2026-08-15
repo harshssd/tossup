@@ -85,8 +85,8 @@ for evidence and research backing). Items get checked as fix PRs merge.
 - [x] SCHEDULED fixtures from followed tournaments in the /home "Upcoming" section ("your team plays Saturday").
 - [x] /player/[id]/edit (owner-gated) + "Edit your profile" affordance; /player/new redirects to the existing profile's edit (no more divergent duplicate identities); wizard ends with a profile CTA.
 
-### Fix PR 4 — mobile (U10)
-- [ ] Hamburger/sheet nav (all links + "Start a club"); create-form grid breakpoints; StandingsTable `overflow-x-auto`; region filter applies on submit.
+### Fix PR 4 — mobile (U10) — ✅ shipped
+- [x] MobileNav menu (full link set + Start a club + Host); create-form grid breakpoints (`grid-cols-1 sm:grid-cols-3`, points row `grid-cols-2 sm:grid-cols-4`); StandingsTable horizontal scroll; region filter applies on submit (was onBlur — iOS dropped it).
 
 ### Staged (with the above)
 - [ ] **C1/C7** Legacy `any` burn-down via typed select helpers (bid/authz paths first); auction `set-state-in-effect` refactors.
