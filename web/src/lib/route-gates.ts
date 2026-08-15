@@ -18,6 +18,12 @@ export function isPublicRoute(pathname: string): boolean {
   if (pathname === '/api/geocode') return true
   // The onboarding wizard — the landing page's PRIMARY CTA.
   if (pathname === '/start') return true
+  // Public pricing page (transparent-pricing strategy; no subroutes).
+  if (pathname === '/pricing') return true
+  // Crawler metadata — crawlers are ALWAYS anonymous; without these the whole
+  // SEO pack 307s to the sign-in page (review: the U1 failure mode, again).
+  if (pathname === '/sitemap.xml') return true
+  if (pathname === '/robots.txt') return true
 
   // Prefix-match routes (all subpaths are public)
   const publicPrefixes = [

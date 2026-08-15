@@ -124,13 +124,13 @@ Same migration also adds tournament conclusion state to `leagues`: `concluded_at
 
 ### Revenue ladder (phases match the roadmap)
 1. **Organizer SaaS (lead, from Phase B/C ship)**
-   - **Free**: club page, roster ≤ 25, honors ≤ 5 entries, 1 active tournament, 10 events/season, community tier badge.
+   - **Free**: club page, roster, honors, events, tournament hosting, share cards — **identity and history are never capped or paywalled** (the public /pricing promise; caps were dropped 2026-08: the never-paywall trust wedge outweighs cap-driven conversion). Fair-use limits only if abuse appears.
    - **Club Pro — $19/mo or $149/yr**: unlimited roster/honors/events, crest + custom accent, club Pavilion, ICS/calendar, priority placement in /discover, verified-review fast-track.
    - **League Pro — $39/tournament or $299/yr organizer plan**: unlimited teams, registrations with custom questions, result share-cards with *their* branding + sponsor strip, pinned/urgent Pavilion posts, exportable standings, multiple co-admins.
    - Season-aligned annual pricing as default (cricket is seasonal — bill yearly).
 2. **Registration & dues rails (Phase D+, Stripe Connect)**: paid tournament registration + club dues; platform fee **2.9% Stripe + 2% TossUp (min $1)**, fee-free on Pro up to a cap — makes Pro obviously worth it for any league charging $100+/team.
-3. **Sponsorship/ads (once metro density exists)**: sponsor slots on league pages + result cards ($50–250/season, organizer keeps 70% if they sell it); featured listings for academies/gear stores on /discover city pages.
-4. **Player premium (last, network-dependent)**: $3–5/mo verified profile, photo gallery, cross-club career honors timeline. Don't build before Phases B–D create data worth paying for.
+3. **Sponsorship (once metro density exists)**: organizer-controlled sponsor slots on league pages + result cards ($50–250/season, organizer keeps 70% if they sell it); featured listings for academies/gear stores on /discover city pages. **Never ads in the personal feed** (the /pricing promise) — sponsorship lives on organizer surfaces the organizer opts into.
+4. **Player premium (last, network-dependent)**: $3–5/mo cosmetic/extras only — photo gallery, profile themes, printable career book. **Never identity or stats**: profiles, points tables, and honors stay free (the /pricing promise). Don't build before the network creates demand.
 
 ### Go-to-market (diaspora metros)
 - **Seed 10–20 leagues, not 1,000 clubs.** One league organizer onboards 8–16 clubs and 100–200 players; the "conclude tournament → verified honors" loop then pulls clubs to claim pages.

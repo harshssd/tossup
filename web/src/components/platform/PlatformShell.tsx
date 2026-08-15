@@ -9,6 +9,9 @@ const NAV_LINKS = [
   { href: '/discover?tab=clubs', label: 'Clubs' },
   { href: '/tournaments', label: 'Tournaments' },
   { href: '/discover?tab=players', label: 'Players' },
+  // lg-only: the md header is already full (review: overflow risk at 768-900px);
+  // MobileNav + the landing footer carry Pricing below lg.
+  { href: '/pricing', label: 'Pricing', lgOnly: true },
 ]
 
 // Clubhouse light theme chrome for every platform page. The `clubhouse` class
@@ -35,7 +38,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={l.href}
                 href={l.href}
-                className="hidden rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] md:flex"
+                className={`hidden rounded-full px-3 py-2 text-sm font-semibold text-[#6f6c63] transition-colors hover:bg-[#eef0ea] hover:text-[#16150f] ${'lgOnly' in l && l.lgOnly ? 'lg:flex' : 'md:flex'}`}
               >
                 {l.label}
               </Link>

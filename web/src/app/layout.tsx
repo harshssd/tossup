@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import PostHogProvider from "@/components/PostHogProvider";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,6 +24,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "TossUp - Complete Cricket Management Platform",
   description: "Comprehensive cricket management platform for clubs, tournaments, and auctions. Manage players, organize leagues, run sealed-bid auctions, and track performance analytics.",
   keywords: ["cricket", "club management", "tournament", "league", "auction", "player management", "cricket analytics", "sports management"],

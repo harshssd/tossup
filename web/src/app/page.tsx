@@ -127,6 +127,7 @@ export default function Home() {
           <nav className="flex flex-wrap items-center gap-5">
             <Link href="/discover" className="hover:text-[#16150f]">Discover</Link>
             <Link href="/tournaments" className="hover:text-[#16150f]">Tournaments</Link>
+            <Link href="/pricing" className="hover:text-[#16150f]">Pricing</Link>
             <Link href="/club/new" className="hover:text-[#16150f]">Start a club</Link>
             <Link href="/auctions" className="flex items-center gap-1.5 hover:text-[#16150f]">
               <Gavel className="h-3.5 w-3.5" /> Player auction

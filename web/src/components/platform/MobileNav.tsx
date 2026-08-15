@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Compass, Shield, Plus, Newspaper, Trophy, Users } from 'lucide-react'
+import { Menu, X, Compass, Shield, Plus, Newspaper, Trophy, Users, Tag } from 'lucide-react'
 
 const LINKS = [
   { href: '/home', label: 'Feed', icon: Newspaper },
@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/discover?tab=clubs', label: 'Clubs', icon: Shield },
   { href: '/tournaments', label: 'Tournaments', icon: Trophy },
   { href: '/discover?tab=players', label: 'Players', icon: Users },
+  { href: '/pricing', label: 'Pricing', icon: Tag },
 ]
 
 /** Small-screen menu (audit U10: the nav previously degraded by deletion — on
