@@ -10,6 +10,10 @@ export function postAuthDestination(search: string, fallback = '/home'): string 
   } catch {
     return fallback
   }
-  if (value && value.startsWith('/') && !value.startsWith('//')) return value
+  // Must be a single-origin relative path. Beyond the `//` protocol-relative
+  // form, WHATWG URL parsing treats backslash as slash for http(s), so
+  // `/\evil.com` would resolve cross-origin — reject backslashes and control
+  // characters outright (2026-08 audit review).
+  if (value && /^\/(?![/\\])/.test(value) && !/[\\\n\r\t]/.test(value)) return value
   return fallback
 }

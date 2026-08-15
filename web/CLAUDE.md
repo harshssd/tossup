@@ -24,7 +24,7 @@ npm run test:coverage # Tests with coverage report
 |------|-----------|---------|
 | Components | PascalCase file + export | `AuctionCard.tsx` |
 | Hooks | camelCase with `use` prefix | `useCaptainSession.ts` |
-| Lib/utils | camelCase | `bid-utils.ts`, `error-handler.ts` |
+| Lib/utils | camelCase | `bid-utils.ts`, `route-gates.ts` |
 | API routes | `route.ts` in folder path | `app/api/auction/[id]/route.ts` |
 | Types | PascalCase interfaces | `AuctionStatus`, `PlayingRole` |
 | CSS classes | Tailwind utilities only | No custom CSS classes |
@@ -104,8 +104,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 ### Error Handling
 - API routes: try/catch with appropriate HTTP status codes
-- Client: `sonner` toast notifications for user-facing errors
-- Use `@/lib/error-handler.ts` for consistent error formatting
+- Client: `sonner` toast notifications for user-facing errors; keep messages specific and actionable
 - Log server errors with `@/lib/logger.ts`
 
 ### Testing

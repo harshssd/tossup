@@ -14,22 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
-    // Platform code stays free of framer-motion: the dep is confined to the
-    // legacy auction UI (slated for retirement) and the platform animates with
-    // CSS/Tailwind. This boundary lets the dependency die with the legacy code
-    // instead of leaking into new surfaces (2026-08 audit C10).
-    files: [
-      "src/components/platform/**",
-      "src/lib/platform/**",
-      "src/app/discover/**",
-      "src/app/club/**",
-      "src/app/tournaments/**",
-      "src/app/player/**",
-      "src/app/home/**",
-      "src/app/start/**",
-      "src/app/notifications/**",
-      "src/app/embed/**",
-    ],
+    // framer-motion is restricted EVERYWHERE by default so new (platform)
+    // surfaces are protected without enumeration; the legacy auction dirs below
+    // carve themselves out until they retire (2026-08 audit C10 + review).
+    files: ["src/**"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -44,6 +32,25 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    // Legacy auction world — allowed until retirement.
+    files: [
+      "src/app/auction/**",
+      "src/app/auctions/**",
+      "src/app/captain/**",
+      "src/app/bid/**",
+      "src/app/live/**",
+      "src/app/auth/**",
+      "src/app/leagues/**",
+      "src/components/auction/**",
+      "src/components/live/**",
+      "src/components/teams/**",
+      "src/components/events/**",
+      "src/components/leagues/**",
+      "src/components/PageTransition.tsx",
+    ],
+    rules: { "no-restricted-imports": "off" },
   },
 ]);
 
