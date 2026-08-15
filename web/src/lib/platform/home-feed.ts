@@ -114,6 +114,9 @@ export async function buildHomeFeed(now: number = Date.now()): Promise<{ upcomin
           .eq('status', 'SCHEDULED')
           .not('scheduled_at', 'is', null)
           .gte('scheduled_at', nowIso)
+          // Horizon-bounded: "your team plays Saturday", not the whole season
+          // (review PR-3) — matches the feed's glanceable-digest intent.
+          .lte('scheduled_at', new Date(now + 14 * 86_400_000).toISOString())
           .order('scheduled_at', { ascending: true })
           .limit(MAX_PER_SOURCE)
       : Promise.resolve({ data: [] }),

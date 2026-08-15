@@ -15,6 +15,20 @@ DECLARE
   v_requester text;
   v_admin uuid;
 BEGIN
+  -- Cooldown: a requester can withdraw+refile at will (cjr_self_delete +
+  -- cjr_self_insert), and each INSERT would re-notify every admin — skip the
+  -- fan-out when this (club, requester) already produced a CLUB_JOIN_REQUESTED
+  -- within the last hour (review PR-3: unbounded notification spam loop).
+  IF EXISTS (
+    SELECT 1 FROM public.notifications n
+    WHERE n.kind = 'CLUB_JOIN_REQUESTED'
+      AND n.created_at > now() - interval '1 hour'
+      AND n.data->>'club_id' = NEW.club_id::text
+      AND n.data->>'requester_id' = NEW.user_id::text
+  ) THEN
+    RETURN NEW;
+  END IF;
+
   SELECT name, slug, owner_id INTO v_club FROM public.clubs WHERE id = NEW.club_id;
   SELECT COALESCE(pp.display_name, u.name, 'A player') INTO v_requester
     FROM public.users u LEFT JOIN public.player_profiles pp ON pp.id = u.primary_person_id
@@ -35,7 +49,7 @@ BEGIN
       v_requester || ' asked to join ' || COALESCE(v_club.name, 'your club'),
       NEW.message,
       CASE WHEN v_club.slug IS NOT NULL THEN '/club/' || v_club.slug || '/manage' END,
-      jsonb_build_object('club_id', NEW.club_id, 'request_id', NEW.id)
+      jsonb_build_object('club_id', NEW.club_id, 'request_id', NEW.id, 'requester_id', NEW.user_id)
     );
   END LOOP;
   RETURN NEW;
