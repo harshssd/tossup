@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, CalendarDays, Settings, Trophy } from 'lucide-react'
+import { MapPin, CalendarDays, CalendarPlus, Settings, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RecognitionBadge } from '@/components/platform/RecognitionBadge'
@@ -164,7 +164,18 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
         <StandingsTable rows={standings} />
       </div>
 
-      <h2 className="cy-display mt-10 text-2xl font-semibold text-[#16150f]">Fixtures &amp; results</h2>
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="cy-display text-2xl font-semibold text-[#16150f]">Fixtures &amp; results</h2>
+        {fixtures.some((fx) => fx.scheduled_at) && (
+          <a
+            href={`/api/tournaments/${league.id}/fixtures.ics`}
+            aria-label="Download the fixture schedule as a calendar file (.ics)"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#0f5a30] hover:underline"
+          >
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Add schedule to calendar
+          </a>
+        )}
+      </div>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {fixtures.length === 0 && <p className="text-sm text-[#9a978d]">No fixtures scheduled.</p>}
         {fixtures.map((fx, i) => (
