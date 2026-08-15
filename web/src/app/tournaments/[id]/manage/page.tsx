@@ -18,7 +18,11 @@ import {
   getTournamentAdminState,
   hostAddTeam,
   hostCreateFixture,
+  hostDeleteFixture,
+  hostDeleteTeam,
   hostSaveFixtureResult,
+  hostUpdateTeam,
+  updateTournamentSettings,
   rejectRegistration,
 } from '@/lib/platform/tournament-host'
 import {
@@ -94,7 +98,9 @@ export default function ManageTournamentPage() {
   }
 
   useEffect(() => {
-    if (access === 'ok') load()
+    // Deferred a microtask so no setState runs synchronously inside the effect
+    // body (react-hooks/set-state-in-effect); load() only sets state after awaits.
+    if (access === 'ok') queueMicrotask(() => void load())
   }, [load, access])
 
   async function onAddTeam(e: React.FormEvent<HTMLFormElement>) {
@@ -111,6 +117,40 @@ export default function ManageTournamentPage() {
       })
       e.currentTarget.reset()
       toast.success('Team added')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onRenameTeam(t: TournamentTeam) {
+    const name = window.prompt(`Rename "${t.name}" to:`, t.name)?.trim()
+    if (!name || name === t.name) return
+    try {
+      await hostUpdateTeam(t.id, { name })
+      toast.success('Team renamed')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onDeleteTeam(t: TournamentTeam) {
+    if (!confirm(`Remove "${t.name}"? Its fixtures keep the recorded name but lose the link.`)) return
+    try {
+      await hostDeleteTeam(t.id)
+      toast.success('Team removed')
+      load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  async function onDeleteFixture(fx: Fixture) {
+    if (!confirm(`Delete the ${fx.team_a_name ?? 'TBD'} vs ${fx.team_b_name ?? 'TBD'} fixture?`)) return
+    try {
+      await hostDeleteFixture(fx.id)
+      toast.success('Fixture deleted')
       load()
     } catch (err) {
       toast.error((err as Error).message)
@@ -191,15 +231,27 @@ export default function ManageTournamentPage() {
         <Pavilion key={id} leagueId={id} mode="host" />
       </section>
 
-      {/* Registrations */}
+      {/* Settings + registration lifecycle (audit U4: registration_status was
+          frozen at creation with no edit surface — self-serve registration was
+          unreachable by default) */}
+      <SettingsSection league={league} onSaved={load} />
+
+      {/* Registrations — ALWAYS visible so hosts learn self-serve registration
+          exists and can share the public link (audit U4) */}
       {(() => {
         const pending = registrations.filter((r) => r.status === 'PENDING')
-        if (registrations.length === 0) return null
         return (
           <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
             <h2 className="cy-display text-xl font-semibold text-[#16150f]">
               Registrations <span className="text-[#9a978d]">({pending.length} pending)</span>
             </h2>
+            {registrations.length === 0 && (
+              <p className="mt-2 text-sm text-[#6f6c63]">
+                No registrations yet. {league.registration_status === 'OPEN'
+                  ? <>Teams can register themselves on your <Link href={`/tournaments/${league.id}`} className="font-semibold text-[#0f5a30] underline">public tournament page</Link> — share that link (WhatsApp works great).</>
+                  : <>Open registration in Settings above, then share your <Link href={`/tournaments/${league.id}`} className="font-semibold text-[#0f5a30] underline">public page</Link> so teams can sign up themselves.</>}
+              </p>
+            )}
             <div className="mt-3 space-y-2">
               {registrations.map((r) => (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2">
@@ -242,8 +294,24 @@ export default function ManageTournamentPage() {
         <div className="mt-3 flex flex-wrap gap-2">
           {teams.length === 0 && <span className="text-sm text-[#9a978d]">No teams yet — add some below.</span>}
           {teams.map((t) => (
-            <span key={t.id} className="inline-flex items-center gap-2 rounded-full border border-[#e7e4db] bg-[#f6f5f1] px-3 py-1 text-xs font-semibold text-[#16150f]">
+            <span key={t.id} className="inline-flex items-center gap-1.5 rounded-full border border-[#e7e4db] bg-[#f6f5f1] px-3 py-1 text-xs font-semibold text-[#16150f]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d57]" /> {t.name}
+              <button
+                type="button"
+                aria-label={`Rename ${t.name}`}
+                className="ml-1 text-[#9a978d] hover:text-[#0f5a30]"
+                onClick={() => onRenameTeam(t)}
+              >
+                ✎
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${t.name}`}
+                className="text-[#9a978d] hover:text-[#c0431a]"
+                onClick={() => onDeleteTeam(t)}
+              >
+                ×
+              </button>
             </span>
           ))}
         </div>
@@ -289,6 +357,9 @@ export default function ManageTournamentPage() {
                   <Button size="sm" variant="ghost" className="text-[#0f5a30] hover:text-[#16150f]" onClick={() => setEditing(editing === fx.id ? null : fx.id)}>
                     {fx.status === 'COMPLETED' ? 'Edit' : 'Enter result'}
                   </Button>
+                  <Button size="sm" variant="ghost" aria-label="Delete fixture" className="text-[#9a978d] hover:text-[#c0431a]" onClick={() => onDeleteFixture(fx)}>
+                    ×
+                  </Button>
                 </div>
               </div>
               {fx.result_note && <p className="mt-1.5 text-xs font-semibold text-[#0f5a30]">{fx.result_note}</p>}
@@ -317,6 +388,102 @@ export default function ManageTournamentPage() {
       <AuctionNightCard />
     </div>
     </PlatformShell>
+  )
+}
+
+function SettingsSection({ league, onSaved }: { league: League; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const isOpen = league.registration_status === 'OPEN'
+
+  async function toggleRegistration() {
+    setToggling(true)
+    try {
+      await updateTournamentSettings(league.id, { registration_status: isOpen ? 'CLOSED' : 'OPEN' })
+      toast.success(isOpen ? 'Registration closed' : 'Registration is OPEN — share your public page so teams can sign up')
+      onSaved()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const name = String(f.get('name') || '').trim()
+    if (!name) {
+      toast.error('Tournament name is required')
+      return
+    }
+    setSaving(true)
+    try {
+      await updateTournamentSettings(league.id, {
+        name,
+        venue: String(f.get('venue') || '').trim() || null,
+        start_date: String(f.get('start_date') || '') || null,
+        end_date: String(f.get('end_date') || '') || null,
+        max_teams: f.get('max_teams') ? Number(f.get('max_teams')) : null,
+      })
+      toast.success('Tournament settings saved')
+      onSaved()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="cy-display text-xl font-semibold text-[#16150f]">Settings</h2>
+        <button
+          type="button"
+          onClick={toggleRegistration}
+          disabled={toggling}
+          aria-pressed={isOpen}
+          className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
+            isOpen ? 'bg-[#1f9d57] text-white' : 'border border-[#d8d4c8] bg-white text-[#6f6c63] hover:border-[#1f9d57] hover:text-[#0f5a30]'
+          }`}
+        >
+          {toggling ? 'Saving…' : isOpen ? 'Registration: OPEN' : 'Open registration'}
+        </button>
+      </div>
+      <p className="mt-1 text-sm text-[#6f6c63]">
+        {isOpen
+          ? 'Teams can register from your public page. Approvals still go through you.'
+          : 'Registration is closed — open it and share your public page so teams sign themselves up.'}
+      </p>
+      <form onSubmit={onSubmit} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-semibold text-[#6f6c63]">Tournament name</span>
+          <Input name="name" defaultValue={league.name} required className="mt-1 h-9" />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-[#6f6c63]">Venue</span>
+          <Input name="venue" defaultValue={league.venue ?? ''} className="mt-1 h-9" />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-[#6f6c63]">Max teams</span>
+          <Input name="max_teams" type="number" defaultValue={league.max_teams ?? ''} className="mt-1 h-9" />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-[#6f6c63]">Start date</span>
+          <Input name="start_date" type="date" defaultValue={league.start_date ?? ''} className="mt-1 h-9" />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-[#6f6c63]">End date</span>
+          <Input name="end_date" type="date" defaultValue={league.end_date ?? ''} className="mt-1 h-9" />
+        </label>
+        <div className="sm:col-span-2">
+          <Button type="submit" size="sm" disabled={saving} className="bg-[#1f9d57] text-white hover:bg-[#0f5a30]">
+            {saving ? 'Saving…' : 'Save settings'}
+          </Button>
+        </div>
+      </form>
+    </section>
   )
 }
 

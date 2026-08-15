@@ -58,6 +58,69 @@ export async function createOwnedClub(input: Partial<Club> & { name: string }): 
   return club as Club
 }
 
+/** The club fields an admin may edit post-creation (2026-08 audit U3 — there was
+ *  NO club edit surface at all, so a wrong `is_recruiting` toggle — the club's
+ *  only discovery lever — was permanent). Whitelist: trust columns
+ *  (recognition_tier, reputation_*, verified_*) and ownership (owner_id, slug,
+ *  visibility) are deliberately not editable here. */
+export interface ClubSettingsPatch {
+  name?: string
+  description?: string | null
+  city?: string | null
+  region?: string | null
+  country?: string | null
+  website?: string | null
+  contact_email?: string | null
+  founded_year?: number | null
+  is_recruiting?: boolean
+  roles_needed?: string[]
+}
+
+const CLUB_SETTINGS_KEYS: (keyof ClubSettingsPatch)[] = [
+  'name', 'description', 'city', 'region', 'country', 'website',
+  'contact_email', 'founded_year', 'is_recruiting', 'roles_needed',
+]
+
+/** Update a club's editable settings (whitelisted columns only; RLS admits club
+ *  admins). If the location changed, re-geocode best-effort so "clubs near me"
+ *  stays accurate — a failed lookup never blocks the save. */
+export async function updateClubSettings(clubId: string, patch: ClubSettingsPatch): Promise<void> {
+  const safe: Record<string, unknown> = {}
+  for (const k of CLUB_SETTINGS_KEYS) {
+    if (k in patch) safe[k] = patch[k]
+  }
+  if (Object.keys(safe).length === 0) return
+
+  if ('city' in patch || 'region' in patch || 'country' in patch) {
+    const countryName = COUNTRIES.find((c) => c.code === patch.country)?.name ?? patch.country ?? null
+    const q = buildPlaceQuery(patch.city, patch.region, countryName)
+    if (q) {
+      const coords = await geocode(q)
+      if (coords) {
+        safe.latitude = coords.lat
+        safe.longitude = coords.lng
+      }
+    }
+  }
+
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('clubs').update(safe).eq('id', clubId)
+  if (error) throw new Error(error.message)
+}
+
+/** Load the editable settings values for the form (authed — admins can read
+ *  their own PRIVATE club too). */
+export async function loadClubSettings(clubId: string): Promise<(ClubSettingsPatch & { slug: string | null }) | null> {
+  const supabase = createPlatformBrowserClient()
+  const { data, error } = await supabase
+    .from('clubs')
+    .select('name, description, city, region, country, website, contact_email, founded_year, is_recruiting, roles_needed, slug')
+    .eq('id', clubId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data
+}
+
 /** Whether the current viewer is signed in and administers this club. */
 export async function getClubAdminState(clubId: string): Promise<{ signedIn: boolean; isAdmin: boolean }> {
   const supabase = createPlatformBrowserClient()

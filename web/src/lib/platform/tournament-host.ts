@@ -91,6 +91,66 @@ export async function hostSaveFixtureResult(id: string, patch: Partial<Fixture>)
   if (error) throw new Error(error.message)
 }
 
+/** Delete a fixture (typo/duplicate cleanup). RLS: league admins only. */
+export async function hostDeleteFixture(id: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('fixtures').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** Rename a team / fix its contact details. RLS: league admins only. */
+export async function hostUpdateTeam(
+  id: string,
+  patch: { name?: string; captain_name?: string | null; contact_phone?: string | null }
+): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('tournament_teams').update(patch).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** Remove a team (added by mistake). RLS: league admins only. */
+export async function hostDeleteTeam(id: string): Promise<void> {
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('tournament_teams').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** The tournament fields a host may edit post-creation (2026-08 audit U4 — there
+ *  was NO edit surface at all, and registration_status was frozen at UPCOMING so
+ *  self-serve registration was unreachable by default). A whitelist type: trust
+ *  columns (recognition_tier, reputation_*, verified_*) and ownership/scope
+ *  columns (owner_id, club_id, visibility) are deliberately not editable here. */
+export interface TournamentSettingsPatch {
+  name?: string
+  description?: string | null
+  venue?: string | null
+  city?: string | null
+  region?: string | null
+  country?: string | null
+  start_date?: string | null
+  end_date?: string | null
+  max_teams?: number | null
+  format?: string | null
+  registration_status?: 'UPCOMING' | 'OPEN' | 'CLOSED'
+}
+
+const TOURNAMENT_SETTINGS_KEYS: (keyof TournamentSettingsPatch)[] = [
+  'name', 'description', 'venue', 'city', 'region', 'country',
+  'start_date', 'end_date', 'max_teams', 'format', 'registration_status',
+]
+
+/** Update a tournament's editable settings (whitelisted columns only). */
+export async function updateTournamentSettings(leagueId: string, patch: TournamentSettingsPatch): Promise<void> {
+  const safe: Record<string, unknown> = {}
+  for (const k of TOURNAMENT_SETTINGS_KEYS) {
+    if (k in patch) safe[k] = patch[k]
+  }
+  if (Object.keys(safe).length === 0) return
+  const supabase = createPlatformBrowserClient()
+  const { error } = await supabase.from('leagues').update(safe).eq('id', leagueId)
+  if (error) throw new Error(error.message)
+}
+
 /** Conclude a tournament: record champion (+ optional runner-up) and mint
  *  TOSSUP_VERIFIED honors into the winning clubs' cabinets. Host-only (RPC
  *  self-checks is_scope_admin). Re-callable — it rewrites verified honors.
