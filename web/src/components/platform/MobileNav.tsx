@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, Compass, Shield, Plus, Newspaper, Trophy, Users } from 'lucide-react'
 
@@ -17,10 +17,36 @@ const LINKS = [
  *  link set + create actions in a dropdown panel. */
 export function MobileNav() {
   const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Close on outside pointerdown + Escape. A fixed-position backdrop can't work
+  // here: the sticky header's backdrop-blur creates a containing block, so
+  // `fixed inset-0` would resolve against the header strip, not the viewport
+  // (review PR-4). Document-level listeners are immune to that trap.
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        buttonRef.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
 
   return (
-    <div className="relative md:hidden">
+    <div ref={rootRef} className="relative md:hidden">
       <button
+        ref={buttonRef}
         type="button"
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
@@ -31,11 +57,9 @@ export function MobileNav() {
       </button>
       {open && (
         <>
-          {/* click-away backdrop */}
-          <button type="button" aria-hidden tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
           <nav
             aria-label="Menu"
-            className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-2xl border border-[#e7e4db] bg-white shadow-[0_16px_50px_-20px_rgba(20,21,15,0.4)]"
+            className="absolute right-0 top-11 z-50 max-h-[calc(100dvh-4rem)] w-56 overflow-y-auto rounded-2xl border border-[#e7e4db] bg-white shadow-[0_16px_50px_-20px_rgba(20,21,15,0.4)]"
           >
             <ul className="py-1.5">
               {LINKS.map((l) => (
