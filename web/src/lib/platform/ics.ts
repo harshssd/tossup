@@ -123,3 +123,74 @@ export function buildClubCalendar(club: CalendarClub, events: ClubEvent[], baseU
   // RFC 5545 requires CRLF line breaks and a trailing CRLF.
   return lines.join('\r\n') + '\r\n'
 }
+
+// ---------------- Tournament fixtures calendar (2026-08 "good to great") ----------------
+
+export interface CalendarLeague {
+  id: string
+  name: string
+}
+
+export interface CalendarFixture {
+  id: string
+  team_a_name: string | null
+  team_b_name: string | null
+  venue: string | null
+  scheduled_at: string | null
+  updated_at: string | null
+}
+
+// Cricket matches run long — block 3 hours by default.
+const FIXTURE_DURATION_MS = 3 * 60 * 60 * 1000
+
+function fixtureVevent(f: CalendarFixture, host: string, leagueName: string, leagueUrl: string | null): string[] {
+  // Callers pre-filter to scheduled_at != null; guard anyway.
+  if (!f.scheduled_at) return []
+  const end = new Date(new Date(f.scheduled_at).getTime() + FIXTURE_DURATION_MS).toISOString()
+  const title = `${f.team_a_name ?? 'TBD'} vs ${f.team_b_name ?? 'TBD'}`
+  const lines = [
+    'BEGIN:VEVENT',
+    `UID:fixture-${f.id}@${host}`,
+    prop('DTSTAMP', formatICSDate(f.updated_at || f.scheduled_at)),
+    prop('DTSTART', formatICSDate(f.scheduled_at)),
+    prop('DTEND', formatICSDate(end)),
+    prop('SUMMARY', escapeICSText(`${title} — ${leagueName}`)),
+    'CATEGORIES:MATCH',
+  ]
+  if (f.venue) lines.push(prop('LOCATION', escapeICSText(f.venue)))
+  if (leagueUrl) lines.push(prop('URL', leagueUrl))
+  lines.push('END:VEVENT')
+  return lines
+}
+
+/** Build a VCALENDAR of a tournament's scheduled fixtures ("the season in your
+ *  calendar"). Same trust rules as buildClubCalendar: `baseUrl` must be a
+ *  TRUSTED server-configured origin, never the request host. */
+export function buildFixturesCalendar(league: CalendarLeague, fixtures: CalendarFixture[], baseUrl?: string): string {
+  let host = UID_HOST
+  let leagueUrl: string | null = null
+  if (baseUrl) {
+    try {
+      const u = new URL(baseUrl)
+      host = u.host || UID_HOST
+      leagueUrl = `${baseUrl.replace(/\/$/, '')}/tournaments/${encodeURIComponent(league.id)}`
+    } catch {
+      // malformed baseUrl → safe defaults
+    }
+  }
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TossUp//Tournament Fixtures//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-PUBLISHED-TTL:PT1H',
+    'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
+    prop('X-WR-CALNAME', escapeICSText(`${league.name} — fixtures`)),
+    prop('X-WR-CALDESC', escapeICSText(`Match schedule for ${league.name} on TossUp`)),
+    ...fixtures.flatMap((f) => fixtureVevent(f, host, league.name, leagueUrl)),
+    'END:VCALENDAR',
+  ]
+  return lines.join('\r\n') + '\r\n'
+}

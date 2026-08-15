@@ -30,6 +30,7 @@ import { ClubAnnouncementsManager } from '@/components/platform/ClubAnnouncement
 import { ClubBrandingManager } from '@/components/platform/ClubBrandingManager'
 import { ClubEmbedSnippet } from '@/components/platform/ClubEmbedSnippet'
 import { ClubSettingsForm } from '@/components/platform/ClubSettingsForm'
+import { ClubSetupChecklist } from '@/components/platform/ClubSetupChecklist'
 import { JoinRequestsManager } from '@/components/platform/JoinRequestsManager'
 
 const selCls = 'h-8 rounded-md border border-[#e7e4db] bg-[#f6f5f1] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#1f9d57]'
@@ -306,15 +307,18 @@ export default function ManageClubPage() {
         </Link>
         <h1 className="cy-display mt-2 text-3xl font-semibold text-[#16150f] sm:text-4xl">Manage club</h1>
 
+        {/* Guided activation — disappears when everything's done */}
+        {club && <ClubSetupChecklist clubId={club.id} />}
+
         {/* Settings — every create-form field stays editable (audit U3) */}
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="settings" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">Club settings</h2>
           <p className="mt-1 text-sm text-[#6f6c63]">Name, location, contact — and whether you&apos;re recruiting (that&apos;s what puts you on the Discover recruiting board).</p>
           {club && <ClubSettingsForm clubId={club.id} onSaved={reloadClub} />}
         </section>
 
         {/* Branding */}
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="branding" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">Branding</h2>
           <p className="mt-1 text-sm text-[#6f6c63]">Your crest, cover photo, and accent colour — this is what makes your club page yours.</p>
           {club && <ClubBrandingManager clubId={club.id} />}
@@ -328,7 +332,7 @@ export default function ManageClubPage() {
           {club && <JoinRequestsManager clubId={club.id} />}
         </section>
 
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="members" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">
             Members <span className="text-[#9a978d]">({roster.length})</span>
           </h2>
@@ -384,7 +388,7 @@ export default function ManageClubPage() {
         </section>
 
         {/* Announcements */}
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="announcements" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">Announcements</h2>
           <p className="mt-1 text-sm text-[#6f6c63]">
             Post news to your members. Announcements show on your club page, pinned + priority-ranked.
@@ -393,7 +397,7 @@ export default function ManageClubPage() {
         </section>
 
         {/* Events */}
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="events" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">
             Events <span className="text-[#9a978d]">({events.length})</span>
           </h2>
@@ -457,7 +461,7 @@ export default function ManageClubPage() {
         </section>
 
         {/* Honours */}
-        <section className="cy-panel mt-6 rounded-2xl p-5 sm:p-6">
+        <section id="honours" className="cy-panel mt-6 scroll-mt-20 rounded-2xl p-5 sm:p-6">
           <h2 className="cy-display text-xl font-semibold text-[#16150f]">
             Honours <span className="text-[#9a978d]">({honors.length})</span>
           </h2>
