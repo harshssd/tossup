@@ -57,7 +57,7 @@ function Section({ title, items, now }: { title: string; items: FeedItem[]; now:
   )
 }
 
-function EmptyState({ heading, body }: { heading: string; body: string }) {
+function EmptyState({ heading, body, signInCta = false }: { heading: string; body: string; signInCta?: boolean }) {
   return (
     <div className="cy-panel mt-8 rounded-3xl border border-dashed border-[#d8d4c8] p-8 text-center">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e7f4ec]">
@@ -65,12 +65,26 @@ function EmptyState({ heading, body }: { heading: string; body: string }) {
       </span>
       <h2 className="cy-display mt-4 text-xl font-semibold text-[#16150f]">{heading}</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-[#6f6c63]">{body}</p>
-      <Link
-        href="/discover"
-        className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#0f5a30]"
-      >
-        <Compass className="h-4 w-4" /> Explore clubs &amp; tournaments
-      </Link>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+        {signInCta && (
+          <Link
+            href="/account/sign-in?redirect=/home"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#0f5a30]"
+          >
+            Sign in
+          </Link>
+        )}
+        <Link
+          href="/discover"
+          className={
+            signInCta
+              ? 'inline-flex items-center gap-1.5 rounded-full border border-[#d8d4c8] bg-white px-5 py-2.5 text-sm font-bold text-[#16150f] transition-colors hover:border-[#1f9d57] hover:text-[#0f5a30]'
+              : 'inline-flex items-center gap-1.5 rounded-full bg-[#1f9d57] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#0f5a30]'
+          }
+        >
+          <Compass className="h-4 w-4" /> Explore clubs &amp; tournaments
+        </Link>
+      </div>
     </div>
   )
 }
@@ -93,6 +107,7 @@ export default async function HomeFeedPage() {
           <EmptyState
             heading="Sign in to build your feed"
             body="Follow your local clubs and tournaments to get their upcoming events, results, and announcements in one place."
+            signInCta
           />
         ) : (
           <FeedBody now={now} />

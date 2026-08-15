@@ -50,7 +50,7 @@ export default function SignInPage() {
         toast.success('Welcome back!')
         // Honor a safe ?redirect= (middleware sets it when bouncing a protected
         // route), else the platform home. Legacy /dashboard is retired.
-        router.push(postAuthDestination(window.location.search))
+        router.push(postAuthDestination(window.location.search, '/auctions'))
       }
     } catch (error) {
       console.error('Sign in error:', error)
@@ -66,7 +66,7 @@ export default function SignInPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${location.origin}/auth/callback`
+          redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(postAuthDestination(window.location.search, '/auctions'))}`
         }
       })
 
@@ -115,8 +115,12 @@ export default function SignInPage() {
             <div className="flex justify-center mb-4">
               <Trophy className="h-10 w-10 text-blue-400" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Access your cricket management platform</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">TossUp Auction</h1>
+            <p className="text-muted-foreground">The live player-auction tool — a separate sign-in from your TossUp community account</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Looking for clubs, tournaments, or your feed?{' '}
+              <Link href="/account/sign-in" className="text-blue-400 underline">Sign in to TossUp</Link>
+            </p>
           </div>
 
           <Card className="shadow-2xl shadow-primary/5 border border-border">

@@ -1,5 +1,13 @@
 # TossUp — Product Review, Adoption Plan & Monetization Strategy (refined)
 
+> **Status (2026-08-15): Phases A–F of this plan are fully SHIPPED** (PRs #18–#43,
+> including the post-roadmap polish: reputation v2, notifications + inbox +
+> digest, geo "near me" + geocoding, embed widget, legacy retirement).
+> [BACKLOG.md](./BACKLOG.md) tracks per-item status. The live workstreams now are:
+> **(1) the 2026-08 audit fixes** — see [PRODUCT_AUDIT_2026-08.md](./PRODUCT_AUDIT_2026-08.md),
+> **(2) production go-live** — see the Production Readiness Runbook,
+> **(3) Part 3 monetization** — pending Stripe account + pricing decisions.
+
 ## Context
 
 TossUp has a solid tournament-hosting spine (create → register teams → fixtures → results → auto-standings via the `tournament_standings` view → Pavilion comms), a hardened Person-based identity model (`player_profiles` + user link + merge + admin link), and a distinctive light "clubhouse" design system. Goal: **get league organizers and local cricket clubs to adopt it** — not by competing on deep match management/scorecards, but by nailing:

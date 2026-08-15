@@ -53,7 +53,10 @@ export function Pavilion({ leagueId, mode, defaultLane = 'announcements' }: Prop
   }, [leagueId, viewerId])
 
   useEffect(() => {
-    void load()
+    // Deferred a microtask so no setState can run synchronously inside the
+    // effect body (react-hooks/set-state-in-effect); load() itself only sets
+    // state after awaits, and the seq counter drops superseded results.
+    queueMicrotask(() => void load())
     // Coalesce realtime bursts: one reply fires both a reply row event and a
     // parent-post UPDATE, and many viewers amplify it — debounce to one refetch.
     let timer: ReturnType<typeof setTimeout> | null = null

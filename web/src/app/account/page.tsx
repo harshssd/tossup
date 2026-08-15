@@ -3,6 +3,7 @@ import { PlatformShell } from '@/components/platform/PlatformShell'
 import { SignOutButton } from '@/components/platform/SignOutButton'
 import { getPlatformUser } from '@/lib/platform/auth-server'
 import { getPersonsForUser } from '@/lib/platform/persons'
+import Link from 'next/link'
 import { initials, roleLabel } from '@/lib/platform/recognition'
 
 export const dynamic = 'force-dynamic'
@@ -37,7 +38,11 @@ export default async function AccountPage() {
           <div className="mt-4 space-y-2">
             {persons.length === 0 && <p className="text-sm text-[#9a978d]">No linked players yet.</p>}
             {persons.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2.5">
+              <Link
+                key={p.id}
+                href={`/player/${p.id}`}
+                className="flex items-center gap-3 rounded-xl border border-[#e7e4db] bg-[#f6f5f1] px-3 py-2.5 transition-colors hover:border-[#1f9d57]"
+              >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eef0ea] text-[11px] font-bold text-[#6f6c63]">
                   {initials(p.display_name)}
                 </span>
@@ -48,7 +53,7 @@ export default async function AccountPage() {
                 {p.id === user.primaryPersonId && (
                   <span className="rounded-full bg-[#e7f4ec] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0f5a30]">You</span>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </div>

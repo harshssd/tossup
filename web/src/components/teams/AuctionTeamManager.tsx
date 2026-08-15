@@ -449,7 +449,7 @@ export function AuctionTeamManager({
         <div className="text-center py-12 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No teams yet</p>
-          {isEditable && <p className="text-sm mt-1">Click "Add Team" to get started</p>}
+          {isEditable && <p className="text-sm mt-1">Click &quot;Add Team&quot; to get started</p>}
         </div>
       ) : (
         <div className="space-y-2">

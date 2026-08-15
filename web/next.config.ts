@@ -75,9 +75,16 @@ const nextConfig: NextConfig = {
       // Legacy club deep-links live in a DIFFERENT database (different slug space),
       // so they can't map 1:1 — send them to the platform club index.
       { source: '/explore/club/:slug*', destination: '/discover?tab=clubs', permanent: false },
-      // Index pages only (exact) — deep /clubs/* and /leagues/* stay on legacy.
-      { source: '/clubs', destination: '/discover?tab=clubs', permanent: false },
+      // All /clubs/* legacy pages were deleted in the 2026-08 audit purge (club
+      // management lives on the platform; the auction flow needs only /leagues/*),
+      // so the whole prefix now redirects. /leagues stays INDEX-ONLY (exact):
+      // /leagues/create + /leagues/[id]/dashboard remain the auction's operational
+      // entry (?league= → /auction/create).
+      { source: '/clubs/:path*', destination: '/discover?tab=clubs', permanent: false },
       { source: '/leagues', destination: '/tournaments', permanent: false },
+      // The legacy dark-theme /tournament/[id] page (divergent registration flow,
+      // legacy-DB ids) was deleted — ids don't map across DBs, so send to the index.
+      { source: '/tournament/:path+', destination: '/tournaments', permanent: false },
       { source: '/dashboard', destination: '/home', permanent: false },
       // /admin previously pointed at the now-retired /dashboard.
       { source: '/admin', destination: '/home', permanent: false },

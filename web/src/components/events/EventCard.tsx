@@ -156,7 +156,7 @@ export function EventCard({
               onClick={() => onRsvp(id, 'NOT_GOING')}
             >
               <X className="h-3 w-3" />
-              Can't Go
+              Can&apos;t Go
             </Button>
           </div>
         )}

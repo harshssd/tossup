@@ -812,7 +812,7 @@ export default function LeaguesDashboard() {
           <DialogHeader>
             <DialogTitle>Delete League</DialogTitle>
             <DialogDescription>
-              Are you absolutely sure you want to delete "{league?.name}"?
+              Are you absolutely sure you want to delete &quot;{league?.name}&quot;?
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

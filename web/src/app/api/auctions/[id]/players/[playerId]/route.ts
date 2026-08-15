@@ -125,7 +125,7 @@ export async function PUT(
 
     // Handle multiple playing roles - store the first role in playingRole field
     // and store all roles in customTags for backward compatibility
-    let updateData: any = {}
+    const updateData: any = {}
 
     if (validatedData.playingRole) {
       const roles = validatedData.playingRole.split(',').map(r => r.trim()).filter(r => r)
